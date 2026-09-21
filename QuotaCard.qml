@@ -5,14 +5,15 @@ import qs.Commons as Commons
 Rectangle {
   id: card
 
-  property var modelData: null
+  property var providerData: null
+  readonly property var dataObj: providerData !== null ? providerData : (typeof modelData !== "undefined" ? modelData : null)
 
-  readonly property string provider: modelData && modelData.provider ? String(modelData.provider) : ""
-  readonly property string name: modelData && modelData.name ? String(modelData.name) : "Provider"
-  readonly property string plan: modelData && modelData.plan ? String(modelData.plan) : ""
-  readonly property int percent: modelData && modelData.quotaPercent !== undefined ? Number(modelData.quotaPercent) : 100
-  readonly property string resetIn: modelData && modelData.resetIn ? String(modelData.resetIn) : "Active"
-  readonly property string status: modelData && modelData.status ? String(modelData.status) : "active"
+  readonly property string provider: dataObj && dataObj.provider ? String(dataObj.provider) : ""
+  readonly property string name: dataObj && dataObj.name ? String(dataObj.name) : "Provider"
+  readonly property string plan: dataObj && dataObj.plan ? String(dataObj.plan) : ""
+  readonly property int percent: dataObj && dataObj.quotaPercent !== undefined ? Number(dataObj.quotaPercent) : 100
+  readonly property string resetIn: dataObj && dataObj.resetIn ? String(dataObj.resetIn) : "Active"
+  readonly property string status: dataObj && dataObj.status ? String(dataObj.status) : "active"
 
   readonly property bool isExhausted: status === "exhausted" || percent <= 0
   readonly property bool isDisabled: status === "disabled"

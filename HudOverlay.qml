@@ -33,7 +33,7 @@ PanelWindow {
     bottom: Commons.Style.space(48)
   }
 
-  implicitWidth: 350
+  implicitWidth: 360
   color: "transparent"
 
   WlrLayershell.namespace: "omniroute-quota-hud"
@@ -45,9 +45,9 @@ PanelWindow {
     id: hudFrame
     anchors.fill: parent
     radius: Commons.Style.space(12)
-    color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.80)
+    color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.85)
     border.width: 1
-    border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.16)
+    border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.18)
     clip: true
 
     ColumnLayout {
@@ -122,7 +122,7 @@ PanelWindow {
         model: hudWindow.pluginService ? hudWindow.pluginService.providers : []
 
         delegate: QuotaCard {
-          modelData: modelData
+          providerData: modelData
           width: providerList.width
         }
       }

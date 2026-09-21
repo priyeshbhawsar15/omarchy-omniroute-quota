@@ -14,6 +14,7 @@ Scope {
   readonly property string helperBin: (manifest && manifest.__sourceDir)
     ? (manifest.__sourceDir + "/bin/omniroute-quota")
     : (homeDir + "/.config/omarchy/plugins/priyesh.omniroute-quota/bin/omniroute-quota")
+  readonly property string stateFilePath: homeDir + "/.local/state/omarchy/omniroute-quota/state.json"
 
   property var providers: []
   property int totalActive: 0
@@ -30,6 +31,7 @@ Scope {
   }
 
   function handleState(jsonText) {
+    if (!jsonText || jsonText.length === 0) return
     try {
       var data = JSON.parse(jsonText)
       if (data.providers) root.providers = data.providers
@@ -49,13 +51,24 @@ Scope {
     root.hudVisible = !root.hudVisible
   }
 
+  FileView {
+    id: stateWatcher
+    path: root.stateFilePath
+    printErrors: false
+    watchChanges: true
+    onLoaded: {
+      root.handleState(stateWatcher.text())
+    }
+  }
+
   Process {
     id: fetchProc
     command: ["python3", root.helperBin, "refresh"]
     stdout: StdioCollector {
+      id: fetchOut
       waitForEnd: true
       onStreamFinished: {
-        root.handleState(text)
+        root.handleState(fetchOut.text)
       }
     }
   }
@@ -69,6 +82,9 @@ Scope {
   }
 
   Component.onCompleted: {
+    if (stateWatcher.loaded) {
+      root.handleState(stateWatcher.text())
+    }
     root.refresh()
   }
 
