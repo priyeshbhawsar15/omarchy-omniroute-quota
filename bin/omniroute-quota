@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+import sys
+import os
+import json
+import time
+import urllib.request
+import urllib.error
+from pathlib import Path
+
+HOME = Path(os.environ.get("HOME", "/tmp"))
+CONFIG_PATH = HOME / ".config/omarchy/omniroute-quota.json"
+STATE_DIR = HOME / ".local/state/omarchy/omniroute-quota"
+STATE_FILE = STATE_DIR / "state.json"
+
+DEFAULT_CONFIG = {
+    "endpoint": "https://omniroute.home.priyeshbhawsar.com",
+    "token": "sk-cbd864e458119963-45d2d6-e35a047c",
+    "refreshIntervalSeconds": 60,
+    "targetScreen": "DP-4",
+    "position": "top-right",
+    "width": 340,
+    "topMargin": 60,
+    "rightMargin": 24
+}
+
+def load_config():
+    if not CONFIG_PATH.is_file():
+        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        CONFIG_PATH.write_text(json.dumps(DEFAULT_CONFIG, indent=2) + "\n")
+        return DEFAULT_CONFIG
+    try:
+        data = json.loads(CONFIG_PATH.read_text())
+        return {**DEFAULT_CONFIG, **data}
+    except Exception:
+        return DEFAULT_CONFIG
+
+def fetch_data():
+    config = load_config()
+    endpoint = config.get("endpoint", "https://omniroute.home.priyeshbhawsar.com").rstrip("/")
+    token = config.get("token", "").strip()
+    
+    headers = {
+        "User-Agent": "OmniRoute-Quickshell-Widget/1.0",
+        "Accept": "application/json"
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    
+    result = {
+        "status": "ok",
+        "lastUpdated": int(time.time()),
+        "endpoint": endpoint,
+        "providers": [],
+        "totalActive": 0,
+        "error": None
+    }
+    
+    # 1. Try /api/providers (management endpoint)
+    req = urllib.request.Request(f"{endpoint}/api/providers", headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            connections = data.get("connections", [])
+            providers_list = []
+            for c in connections:
+                provider_id = c.get("provider", "unknown")
+                name = c.get("name", provider_id.capitalize())
+                status = c.get("status", "active")
+                models = c.get("models", [])
+                quota = c.get("quota") or {}
+                
+                providers_list.append({
+                    "id": c.get("id", provider_id),
+                    "provider": provider_id,
+                    "name": name,
+                    "status": status,
+                    "modelCount": len(models),
+                    "quotaLimit": quota.get("limit", 100),
+                    "quotaRemaining": quota.get("remaining", 100),
+                    "quotaPercent": quota.get("percent", 100),
+                    "resetIn": quota.get("resetIn", "24h")
+                })
+            result["providers"] = providers_list
+            result["totalActive"] = len([p for p in providers_list if p["status"] == "active"])
+            save_state(result)
+            return result
+    except urllib.error.HTTPError as e:
+        err_body = ""
+        try: err_body = e.read().decode("utf-8")
+        except Exception: pass
+        
+        # If management token failed (AUTH_001), try client model catalog via /v1/models
+        if e.code in (401, 403):
+            models_req = urllib.request.Request(f"{endpoint}/v1/models", headers=headers)
+            try:
+                with urllib.request.urlopen(models_req, timeout=8) as m_resp:
+                    m_data = json.loads(m_resp.read().decode("utf-8"))
+                    model_list = m_data.get("data", [])
+                    by_provider = {}
+                    for m in model_list:
+                        owner = m.get("owned_by") or (m.get("id", "").split("/")[0] if "/" in m.get("id", "") else "custom")
+                        by_provider[owner] = by_provider.get(owner, 0) + 1
+                    
+                    providers_list = []
+                    for owner, count in sorted(by_provider.items(), key=lambda x: -x[1]):
+                        providers_list.append({
+                            "id": owner,
+                            "provider": owner,
+                            "name": owner.capitalize(),
+                            "status": "active",
+                            "modelCount": count,
+                            "quotaLimit": 100,
+                            "quotaRemaining": 100,
+                            "quotaPercent": 100,
+                            "resetIn": "Active"
+                        })
+                    result["providers"] = providers_list
+                    result["totalActive"] = len(providers_list)
+                    result["authNotice"] = "Client API Connected (Management Token required for real-time quota telemetry)"
+                    save_state(result)
+                    return result
+            except Exception as m_err:
+                result["status"] = "error"
+                result["error"] = f"Auth error: Please configure Management Key in omniroute-quota.json"
+                save_state(result)
+                return result
+        else:
+            result["status"] = "error"
+            result["error"] = f"HTTP {e.code}: {e.reason}"
+            save_state(result)
+            return result
+    except Exception as e:
+        result["status"] = "error"
+        result["error"] = str(e)
+        save_state(result)
+        return result
+
+def save_state(state):
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    STATE_FILE.write_text(json.dumps(state, indent=2) + "\n")
+
+def get_state():
+    if STATE_FILE.is_file():
+        try: return json.loads(STATE_FILE.read_text())
+        except Exception: pass
+    return fetch_data()
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "get"
+    if cmd == "fetch" or cmd == "refresh":
+        print(json.dumps(fetch_data(), indent=2))
+    elif cmd == "get" or cmd == "status":
+        print(json.dumps(get_state(), indent=2))
+    elif cmd == "config":
+        print(json.dumps(load_config(), indent=2))
+    else:
+        print(json.dumps({"error": f"Unknown command: {cmd}"}))
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
