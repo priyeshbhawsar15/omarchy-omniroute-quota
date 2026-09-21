@@ -458,7 +458,7 @@ PanelWindow {
                 id: otherAccountCard
                 required property var modelData
                 Layout.fillWidth: true
-                height: 58
+                height: 64
                 radius: Commons.Style.space(8)
                 color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
                 border.width: 1
@@ -469,7 +469,7 @@ PanelWindow {
                 ColumnLayout {
                   anchors.fill: parent
                   anchors.margins: Commons.Style.space(8)
-                  spacing: 2
+                  spacing: 4
 
                   RowLayout {
                     Layout.fillWidth: true
@@ -493,7 +493,7 @@ PanelWindow {
                     }
 
                     Text {
-                      text: modelData && modelData.status === "active" ? "100% Quota" : "0% Quota"
+                      text: modelData && modelData.percent > 0 ? (modelData.percent + "% Gemini") : "0% Gemini"
                       color: otherAccountCard.cardStatusColor
                       font.family: Commons.Style.font.family
                       font.pixelSize: Commons.Style.font.caption
@@ -508,6 +508,19 @@ PanelWindow {
                     font.pixelSize: Commons.Style.font.caption
                     Layout.fillWidth: true
                     elide: Text.ElideRight
+                  }
+
+                  Rectangle {
+                    Layout.fillWidth: true
+                    height: 3
+                    radius: 1.5
+                    color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.10)
+                    Rectangle {
+                      height: parent.height
+                      radius: 1.5
+                      width: Math.max(4, parent.width * ((modelData ? Number(modelData.percent) : 0) / 100))
+                      color: otherAccountCard.cardStatusColor
+                    }
                   }
                 }
               }

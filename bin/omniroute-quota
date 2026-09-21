@@ -131,17 +131,30 @@ def fetch_data():
         sc_email = sc.get("email") or sc.get("name") or "Starter Account"
         is_act = sc.get("isActive", True)
         
+        # Match cooldowns on this specific connection
         sc_cds = [cd for cd in cooldowns if cd.get("connectionId") == sc_id]
-        if sc_cds:
-            max_rem = max([cd.get("remainingMs", 0) for cd in sc_cds])
+        gemini_cds = [cd for cd in sc_cds if "gemini" in cd.get("model", "").lower()]
+        claude_cds = [cd for cd in sc_cds if "claude" in cd.get("model", "").lower()]
+        
+        if gemini_cds:
+            max_rem = max([cd.get("remainingMs", 0) for cd in gemini_cds])
             dur_text = format_duration(max_rem)
-            models_affected = ", ".join(sorted(list({cd.get("model", "").replace("exact:", "").replace("-high", "") for cd in sc_cds})))
             starter_cards.append({
                 "account": sc_email,
                 "tier": "Starter Quota",
                 "percent": 0,
                 "status": "exhausted",
-                "detail": f"0% Available · {dur_text} ({models_affected})"
+                "detail": f"0% Gemini Quota · Gemini 3.7 Exhausted ({dur_text})"
+            })
+        elif claude_cds:
+            max_rem = max([cd.get("remainingMs", 0) for cd in claude_cds])
+            dur_text = format_duration(max_rem)
+            starter_cards.append({
+                "account": sc_email,
+                "tier": "Starter Quota",
+                "percent": 100,
+                "status": "active",
+                "detail": f"100% Gemini Available (Claude cooldown · {dur_text})"
             })
         elif not is_act:
             starter_cards.append({
@@ -149,7 +162,7 @@ def fetch_data():
                 "tier": "Starter Quota",
                 "percent": 0,
                 "status": "disabled",
-                "detail": "0% Available · Account Paused"
+                "detail": "0% Quota · Account Paused"
             })
         else:
             starter_cards.append({
@@ -157,7 +170,7 @@ def fetch_data():
                 "tier": "Starter Quota",
                 "percent": 100,
                 "status": "active",
-                "detail": "100% Available · Standby Account"
+                "detail": "100% Gemini Available · Standby Account"
             })
     
     result["otherGoogleAccounts"] = starter_cards
