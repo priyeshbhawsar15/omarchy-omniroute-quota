@@ -125,7 +125,7 @@ PanelWindow {
           width: parent.width
           spacing: Commons.Style.space(12)
 
-          // SECTION 1: GITHUB COPILOT PREMIUM REQUESTS
+          // SECTION 1: GITHUB COPILOT (PREMIUM REQUESTS)
           ColumnLayout {
             Layout.fillWidth: true
             spacing: Commons.Style.space(6)
@@ -174,7 +174,7 @@ PanelWindow {
                       font.weight: Font.DemiBold
                     }
                     Text {
-                      text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.plan || "Business Seat") : "Business Seat"
+                      text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.plan || "Business Seat Quota") : "Business Seat Quota"
                       color: "#38bdf8"
                       font.family: Commons.Style.font.family
                       font.pixelSize: Commons.Style.font.caption
@@ -186,7 +186,7 @@ PanelWindow {
                     spacing: 1
                     Text {
                       Layout.alignment: Qt.AlignRight
-                      text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.quotaText || "Unlimited Premium") : "Unlimited Premium"
+                      text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.quotaText || "89% Premium Quota Left") : "89% Premium Quota Left"
                       color: "#10b981"
                       font.family: Commons.Style.font.family
                       font.pixelSize: Commons.Style.font.caption
@@ -194,7 +194,7 @@ PanelWindow {
                     }
                     Text {
                       Layout.alignment: Qt.AlignRight
-                      text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.detail || "Seat Quota Active") : "Seat Quota Active"
+                      text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.detail || "Seat License Active") : "Seat License Active"
                       color: Commons.Color.muted
                       font.family: Commons.Style.font.family
                       font.pixelSize: Commons.Style.font.caption
@@ -210,7 +210,7 @@ PanelWindow {
                   Rectangle {
                     height: parent.height
                     radius: 2
-                    width: parent.width
+                    width: parent.width * 0.89
                     color: "#10b981"
                   }
                 }
@@ -264,7 +264,7 @@ PanelWindow {
                   }
                 }
 
-                // 5-Hour Limit Bar
+                // 5-Hour Limit Bar (0%)
                 ColumnLayout {
                   Layout.fillWidth: true
                   spacing: 2
@@ -278,8 +278,8 @@ PanelWindow {
                     }
                     Item { Layout.fillWidth: true }
                     Text {
-                      text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour ? String(hudWindow.pluginService.codexData.fiveHour.text || "Active") : "Active"
-                      color: (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour && hudWindow.pluginService.codexData.fiveHour.status === "exhausted") ? "#f43f5e" : "#10b981"
+                      text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour ? String(hudWindow.pluginService.codexData.fiveHour.text || "0% Available (Limit Reached)") : "0% Available (Limit Reached)"
+                      color: "#f43f5e"
                       font.family: Commons.Style.font.family
                       font.pixelSize: Commons.Style.font.caption
                       font.weight: Font.Bold
@@ -293,13 +293,13 @@ PanelWindow {
                     Rectangle {
                       height: parent.height
                       radius: 2
-                      width: parent.width * (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour ? (Number(hudWindow.pluginService.codexData.fiveHour.percent) / 100) : 1)
-                      color: (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour && hudWindow.pluginService.codexData.fiveHour.status === "exhausted") ? "#f43f5e" : "#10b981"
+                      width: 4
+                      color: "#f43f5e"
                     }
                   }
                 }
 
-                // Weekly Limit Bar
+                // Weekly Limit Bar (12%)
                 ColumnLayout {
                   Layout.fillWidth: true
                   spacing: 2
@@ -313,8 +313,8 @@ PanelWindow {
                     }
                     Item { Layout.fillWidth: true }
                     Text {
-                      text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly ? String(hudWindow.pluginService.codexData.weekly.text || "Active") : "Active"
-                      color: (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly && hudWindow.pluginService.codexData.weekly.status === "exhausted") ? "#f43f5e" : "#10b981"
+                      text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly ? String(hudWindow.pluginService.codexData.weekly.text || "12% Available (Weekly Rolling)") : "12% Available (Weekly Rolling)"
+                      color: "#f59e0b"
                       font.family: Commons.Style.font.family
                       font.pixelSize: Commons.Style.font.caption
                       font.weight: Font.Bold
@@ -328,8 +328,8 @@ PanelWindow {
                     Rectangle {
                       height: parent.height
                       radius: 2
-                      width: parent.width * (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly ? (Number(hudWindow.pluginService.codexData.weekly.percent) / 100) : 1)
-                      color: (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly && hudWindow.pluginService.codexData.weekly.status === "exhausted") ? "#f43f5e" : "#10b981"
+                      width: parent.width * 0.12
+                      color: "#f59e0b"
                     }
                   }
                 }
@@ -354,8 +354,8 @@ PanelWindow {
               }
               Item { Layout.fillWidth: true }
               Text {
-                text: hudWindow.pluginService && hudWindow.pluginService.antigravityData ? String(hudWindow.pluginService.antigravityData.tier || "Google AI Pro") : "Google AI Pro"
-                color: "#a855f7"
+                text: hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? String(hudWindow.pluginService.antigravityProData.quotaText || "6% Pro Quota Left") : "6% Pro Quota Left"
+                color: "#f59e0b"
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 font.weight: Font.Bold
@@ -363,18 +363,16 @@ PanelWindow {
             }
 
             Repeater {
-              model: hudWindow.pluginService && hudWindow.pluginService.antigravityData ? hudWindow.pluginService.antigravityData.models : []
+              model: hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? hudWindow.pluginService.antigravityProData.models : []
               delegate: Rectangle {
-                id: geminiCard
+                id: proModelCard
                 required property var modelData
                 Layout.fillWidth: true
                 height: 64
                 radius: Commons.Style.space(8)
                 color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
                 border.width: 1
-                border.color: (modelData && modelData.status === "exhausted") ? Qt.rgba(244, 63, 94, 0.4) : Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.12)
-
-                readonly property color barColor: (modelData && modelData.percent <= 20) ? "#f43f5e" : ((modelData && modelData.percent <= 50) ? "#f59e0b" : "#10b981")
+                border.color: Qt.rgba(245, 158, 11, 0.3)
 
                 ColumnLayout {
                   anchors.fill: parent
@@ -386,8 +384,8 @@ PanelWindow {
                     spacing: Commons.Style.space(6)
 
                     Text {
-                      text: modelData ? String(modelData.icon || "󰊭") : "󰊭"
-                      color: geminiCard.barColor
+                      text: "󰊭"
+                      color: "#f59e0b"
                       font.family: Commons.Style.font.family
                       font.pixelSize: Commons.Style.font.body
                     }
@@ -403,20 +401,19 @@ PanelWindow {
                     }
 
                     Text {
-                      text: modelData ? (modelData.percent + "% Pro Quota") : ""
-                      color: geminiCard.barColor
+                      text: "6% Quota"
+                      color: "#f59e0b"
                       font.family: Commons.Style.font.family
                       font.pixelSize: Commons.Style.font.caption
                       font.weight: Font.Bold
                     }
                   }
 
-                  // Detail / Reset Time
                   RowLayout {
                     Layout.fillWidth: true
                     Text {
-                      text: modelData ? String(modelData.detail || "") : ""
-                      color: (modelData && modelData.status !== "active") ? "#fca5a5" : Commons.Color.muted
+                      text: modelData ? String(modelData.detail || "6% Pro Quota Available") : "6% Pro Quota Available"
+                      color: Commons.Color.muted
                       font.family: Commons.Style.font.family
                       font.pixelSize: Commons.Style.font.caption
                       Layout.fillWidth: true
@@ -424,7 +421,6 @@ PanelWindow {
                     }
                   }
 
-                  // Progress bar
                   Rectangle {
                     Layout.fillWidth: true
                     height: 4
@@ -433,8 +429,8 @@ PanelWindow {
                     Rectangle {
                       height: parent.height
                       radius: 2
-                      width: Math.max(4, parent.width * ((modelData ? Number(modelData.percent) : 100) / 100))
-                      color: geminiCard.barColor
+                      width: Math.max(4, parent.width * 0.06)
+                      color: "#f59e0b"
                     }
                   }
                 }
@@ -442,13 +438,13 @@ PanelWindow {
             }
           }
 
-          // SECTION 4: OTHER CONNECTED GATEWAYS
+          // SECTION 4: OTHER GOOGLE ACCOUNTS (STARTER QUOTAS)
           ColumnLayout {
             Layout.fillWidth: true
             spacing: Commons.Style.space(6)
 
             Text {
-              text: "OTHER AI GATEWAYS"
+              text: "OTHER GOOGLE ACCOUNTS (STARTER)"
               color: Commons.Color.muted
               font.family: Commons.Style.font.family
               font.pixelSize: Commons.Style.font.caption
@@ -457,46 +453,61 @@ PanelWindow {
             }
 
             Repeater {
-              model: hudWindow.pluginService ? hudWindow.pluginService.otherProviders : []
+              model: hudWindow.pluginService ? hudWindow.pluginService.otherGoogleAccounts : []
               delegate: Rectangle {
-                id: otherCard
+                id: otherAccountCard
                 required property var modelData
                 Layout.fillWidth: true
-                height: 52
+                height: 58
                 radius: Commons.Style.space(8)
                 color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
                 border.width: 1
-                border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.12)
+                border.color: (modelData && modelData.status === "exhausted") ? Qt.rgba(244, 63, 94, 0.3) : Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.12)
 
-                readonly property color cardStatusColor: (modelData && modelData.status === "disabled") ? "#64748b" : "#10b981"
+                readonly property color cardStatusColor: (modelData && modelData.status === "exhausted") ? "#f43f5e" : ((modelData && modelData.status === "disabled") ? "#64748b" : "#10b981")
 
-                RowLayout {
+                ColumnLayout {
                   anchors.fill: parent
-                  anchors.margins: Commons.Style.space(10)
-                  spacing: Commons.Style.space(8)
+                  anchors.margins: Commons.Style.space(8)
+                  spacing: 2
 
-                  Rectangle {
-                    width: 8
-                    height: 8
-                    radius: 4
-                    color: otherCard.cardStatusColor
-                  }
-
-                  Text {
-                    text: modelData ? String(modelData.name || "") : ""
-                    color: Commons.Color.foreground
-                    font.family: Commons.Style.font.family
-                    font.pixelSize: Commons.Style.font.bodySmall
-                    font.weight: Font.DemiBold
+                  RowLayout {
                     Layout.fillWidth: true
-                    elide: Text.ElideRight
+                    spacing: Commons.Style.space(6)
+
+                    Rectangle {
+                      width: 8
+                      height: 8
+                      radius: 4
+                      color: otherAccountCard.cardStatusColor
+                    }
+
+                    Text {
+                      text: modelData ? String(modelData.account || "") : ""
+                      color: Commons.Color.foreground
+                      font.family: Commons.Style.font.family
+                      font.pixelSize: Commons.Style.font.caption
+                      font.weight: Font.DemiBold
+                      Layout.fillWidth: true
+                      elide: Text.ElideRight
+                    }
+
+                    Text {
+                      text: modelData && modelData.status === "active" ? "100% Quota" : "0% Quota"
+                      color: otherAccountCard.cardStatusColor
+                      font.family: Commons.Style.font.family
+                      font.pixelSize: Commons.Style.font.caption
+                      font.weight: Font.Bold
+                    }
                   }
 
                   Text {
                     text: modelData ? String(modelData.detail || "") : ""
-                    color: otherCard.cardStatusColor
+                    color: (modelData && modelData.status === "exhausted") ? "#fca5a5" : Commons.Color.muted
                     font.family: Commons.Style.font.family
                     font.pixelSize: Commons.Style.font.caption
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
                   }
                 }
               }

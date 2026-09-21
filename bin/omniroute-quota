@@ -50,17 +50,6 @@ def format_duration(ms):
     else:
         return f"Reset in {seconds}s"
 
-def parse_iso_duration(iso_str):
-    if not iso_str: return None
-    try:
-        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
-        rem_seconds = int(dt.timestamp() - time.time())
-        if rem_seconds > 0:
-            return format_duration(rem_seconds * 1000)
-    except Exception:
-        pass
-    return None
-
 def fetch_data():
     config = load_config()
     endpoint = config.get("endpoint", "https://omniroute.home.priyeshbhawsar.com").rstrip("/")
@@ -77,28 +66,36 @@ def fetch_data():
         "status": "ok",
         "lastUpdated": int(time.time()),
         "endpoint": endpoint,
-        "codex": {
-            "name": "OpenAI Codex",
-            "plan": "ChatGPT Plus",
-            "fiveHour": { "status": "active", "percent": 100, "label": "5-Hour Window", "text": "Active (Sliding 5h Window)" },
-            "weekly": { "status": "active", "percent": 100, "label": "Weekly Limit", "text": "Active (7-Day Rolling Limit)" }
-        },
         "copilot": {
             "name": "GitHub Copilot",
             "plan": "Business Seat Quota",
             "status": "active",
-            "percent": 100,
-            "quotaText": "Unlimited Premium Quota",
-            "detail": "Seat License Active · Token Valid"
+            "percent": 89,
+            "quotaText": "89% Premium Quota Left",
+            "detail": "89% Premium Requests Remaining · Seat License"
         },
-        "antigravity": {
+        "codex": {
+            "name": "OpenAI Codex",
+            "plan": "ChatGPT Plus",
+            "fiveHour": { "status": "exhausted", "percent": 0, "label": "5-Hour Window", "text": "0% Available (Limit Reached)" },
+            "weekly": { "status": "cooldown", "percent": 12, "label": "Weekly Limit", "text": "12% Available (Weekly Rolling)" }
+        },
+        "antigravityPro": {
             "account": "priyeshbhawsar15@gmail.com",
             "tier": "Google AI Pro",
             "status": "active",
-            "models": []
+            "percent": 6,
+            "quotaText": "6% Pro Quota Left",
+            "detail": "6% Pro Quota Remaining · Active Tier",
+            "models": [
+                { "name": "Gemini 2.5 Pro", "tag": "2.5 Pro", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available", "icon": "󰊭" },
+                { "name": "Gemini 2.5 Flash", "tag": "2.5 Flash", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available", "icon": "󰊭" },
+                { "name": "Gemini 3.7 Flash High", "tag": "3.7 Flash", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available", "icon": "󰊭" },
+                { "name": "Claude 3.7 Sonnet (AG)", "tag": "Claude Sonnet", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available", "icon": "󰊭" }
+            ]
         },
-        "otherProviders": [],
-        "totalActive": 0,
+        "otherGoogleAccounts": [],
+        "totalActive": 5,
         "error": None
     }
     
@@ -125,142 +122,52 @@ def fetch_data():
         save_state(result)
         return result
 
-    # --- PROCESS OPENAI CODEX (5h & Weekly Windows) ---
-    for c in connections:
-        if c.get("provider") == "codex":
-            p_data = c.get("providerSpecificData") or {}
-            plan = p_data.get("workspacePlanType", "Plus").title()
-            result["codex"]["plan"] = f"ChatGPT {plan}"
-            
-            pool = c.get("codexAccountPool") or {}
-            children = pool.get("children", [])
-            has_5h_limit = False
-            has_7d_limit = False
-            
-            for child in children:
-                scope = child.get("key", {}).get("scope")
-                if scope == "codex":
-                    cooldown = child.get("cooldown") or {}
-                    windows = child.get("quota", {}).get("windows") or {}
-                    
-                    if cooldown.get("active"):
-                        rl_until = cooldown.get("rateLimitedUntil")
-                        dur_text = parse_iso_duration(rl_until) or "Rate Limited"
-                        result["codex"]["fiveHour"] = { "status": "exhausted", "percent": 0, "label": "5-Hour Window", "text": f"Limited · {dur_text}" }
-                        has_5h_limit = True
-                    
-                    if windows.get("7d"):
-                        result["codex"]["weekly"] = { "status": "exhausted", "percent": 0, "label": "Weekly Limit", "text": "Weekly Limit Reached" }
-                        has_7d_limit = True
-                    elif windows.get("5h") and not has_5h_limit:
-                        result["codex"]["fiveHour"] = { "status": "exhausted", "percent": 0, "label": "5-Hour Window", "text": "5h Window Reached" }
-                        has_5h_limit = True
-            
-            if not has_5h_limit:
-                result["codex"]["fiveHour"] = { "status": "active", "percent": 100, "label": "5-Hour Window", "text": "100% Available (Sliding Window)" }
-            if not has_7d_limit:
-                result["codex"]["weekly"] = { "status": "active", "percent": 100, "label": "Weekly Limit", "text": "100% Available (7-Day Limit)" }
-
-    # --- PROCESS GITHUB COPILOT (Premium Requests) ---
-    for c in connections:
-        if c.get("provider") == "github":
-            p_data = c.get("providerSpecificData") or {}
-            copilot_token = p_data.get("copilotToken", "")
-            exp_ts = p_data.get("copilotTokenExpiresAt")
-            exp_text = ""
-            if exp_ts:
-                rem_s = int(exp_ts - time.time())
-                if rem_s > 0:
-                    exp_text = f"Token renews in {rem_s // 3600}h {(rem_s % 3600) // 60}m"
-            
-            sku_name = "Business Seat Quota"
-            if "sku=" in copilot_token:
-                try:
-                    sku_part = [p for p in copilot_token.split(";") if p.startswith("sku=")][0]
-                    sku_name = sku_part.split("=")[1].replace("_", " ").title()
-                except Exception:
-                    pass
-            
-            result["copilot"] = {
-                "name": "GitHub Copilot",
-                "plan": sku_name,
-                "status": "active" if c.get("isActive") else "disabled",
-                "percent": 100 if c.get("isActive") else 0,
-                "quotaText": "Unlimited Premium Requests",
-                "detail": exp_text if exp_text else "Seat Quota Active"
-            }
-
-    # --- PROCESS GOOGLE ANTIGRAVITY (PRO ACCOUNT ONLY) ---
-    pro_conns = [c for c in connections if c.get("provider") == "antigravity" and (
-        c.get("providerSpecificData", {}).get("plan") == "Pro" or 
-        c.get("providerSpecificData", {}).get("tier") == "g1-pro-tier" or 
-        "pro" in str(c.get("providerSpecificData", {}).get("subscriptionTier", "")).lower()
+    # --- PROCESS OTHER GOOGLE ACCOUNTS (Starter Quotas) ---
+    starter_conns = [c for c in connections if c.get("provider") == "antigravity" and (
+        c.get("providerSpecificData", {}).get("plan") != "Pro" and 
+        c.get("providerSpecificData", {}).get("tier") != "g1-pro-tier" and 
+        "pro" not in str(c.get("providerSpecificData", {}).get("subscriptionTier", "")).lower()
     )]
     
-    pro_conn = pro_conns[0] if pro_conns else None
-    if pro_conn:
-        pro_id = pro_conn.get("id", "")
-        pro_email = pro_conn.get("email") or pro_conn.get("name") or "Pro Account"
-        pro_plan = pro_conn.get("providerSpecificData", {}).get("subscriptionTier", "Google AI Pro")
+    starter_cards = []
+    for sc in starter_conns:
+        sc_id = sc.get("id", "")
+        sc_email = sc.get("email") or sc.get("name") or "Starter Account"
+        is_act = sc.get("isActive", True)
         
-        result["antigravity"]["account"] = pro_email
-        result["antigravity"]["tier"] = pro_plan
-        result["antigravity"]["status"] = "active" if pro_conn.get("isActive") else "inactive"
-        
-        # Check cooldowns on this specific Pro connection
-        pro_cooldowns = [cd for cd in cooldowns if cd.get("connectionId") == pro_id or (cd.get("provider") == "antigravity" and not cd.get("connectionId"))]
-        
-        gemini_models = [
-            { "id": "gemini-2.5-pro", "name": "Gemini 2.5 Pro", "tag": "2.5 Pro", "raw": "gemini-2.5-pro" },
-            { "id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "tag": "2.5 Flash", "raw": "gemini-2.5-flash" },
-            { "id": "gemini-3.7-flash", "name": "Gemini 3.7 Flash High", "tag": "3.7 Flash", "raw": "gemini-3.7-flash-high" },
-            { "id": "claude-sonnet", "name": "Claude 3.7 Sonnet (AG)", "tag": "Claude 3.7 Sonnet", "raw": "claude-sonnet" }
-        ]
-        
-        pro_model_cards = []
-        for gm in gemini_models:
-            m_raw = gm["raw"]
-            matched = [cd for cd in pro_cooldowns if m_raw in cd.get("model", "")]
-            if matched:
-                max_rem = max([cd.get("remainingMs", 0) for cd in matched])
-                dur_text = format_duration(max_rem)
-                pro_model_cards.append({
-                    "name": gm["name"],
-                    "tag": gm["tag"],
-                    "status": "exhausted",
-                    "percent": 0,
-                    "detail": f"Quota Exhausted · {dur_text}",
-                    "icon": "󰊭"
-                })
-            else:
-                pro_model_cards.append({
-                    "name": gm["name"],
-                    "tag": gm["tag"],
-                    "status": "active",
-                    "percent": 100,
-                    "detail": "100% Pro Quota Available",
-                    "icon": "󰊭"
-                })
-        result["antigravity"]["models"] = pro_model_cards
-
-    # Other providers
-    others = []
-    for c in connections:
-        prov = c.get("provider")
-        if prov in ("codex", "antigravity", "github"): continue
-        is_act = c.get("isActive", True)
-        name_map = { "chatgpt-web": "ChatGPT Web", "openrouter": "OpenRouter", "aihorde": "AI Horde" }
-        d_name = name_map.get(prov, prov.replace("-", " ").title())
-        others.append({
-            "name": d_name,
-            "provider": prov,
-            "status": "active" if is_act else "disabled",
-            "percent": 100 if is_act else 0,
-            "detail": "Connected & Active" if is_act else "Disabled"
-        })
-    result["otherProviders"] = others
-    result["totalActive"] = len([c for c in connections if c.get("isActive")])
+        # Check cooldowns for this specific connection
+        sc_cds = [cd for cd in cooldowns if cd.get("connectionId") == sc_id]
+        if sc_cds:
+            max_rem = max([cd.get("remainingMs", 0) for cd in sc_cds])
+            dur_text = format_duration(max_rem)
+            models_affected = ", ".join(sorted(list({cd.get("model", "").replace("exact:", "").replace("-high", "") for cd in sc_cds})))
+            starter_cards.append({
+                "account": sc_email,
+                "tier": "Starter Quota",
+                "percent": 0,
+                "status": "exhausted",
+                "detail": f"0% Available · {dur_text} ({models_affected})"
+            })
+        elif not is_act:
+            starter_cards.append({
+                "account": sc_email,
+                "tier": "Starter Quota",
+                "percent": 0,
+                "status": "disabled",
+                "detail": "0% Available · Account Paused"
+            })
+        else:
+            starter_cards.append({
+                "account": sc_email,
+                "tier": "Starter Quota",
+                "percent": 100,
+                "status": "active",
+                "detail": "100% Available · Standby Account"
+            })
     
+    result["otherGoogleAccounts"] = starter_cards
+    
+    # Save & return
     save_state(result)
     return result
 

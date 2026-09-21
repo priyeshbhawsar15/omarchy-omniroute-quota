@@ -16,10 +16,10 @@ Scope {
     : (homeDir + "/.config/omarchy/plugins/priyesh.omniroute-quota/bin/omniroute-quota")
   readonly property string stateFilePath: homeDir + "/.local/state/omarchy/omniroute-quota/state.json"
 
-  property var codexData: ({})
   property var copilotData: ({})
-  property var antigravityData: ({})
-  property var otherProviders: []
+  property var codexData: ({})
+  property var antigravityProData: ({})
+  property var otherGoogleAccounts: []
   property int totalActive: 0
   property string lastUpdatedText: ""
   property bool hudVisible: true
@@ -36,10 +36,10 @@ Scope {
     if (!jsonText || jsonText.length === 0) return
     try {
       var data = JSON.parse(jsonText)
-      if (data.codex) root.codexData = data.codex
       if (data.copilot) root.copilotData = data.copilot
-      if (data.antigravity) root.antigravityData = data.antigravity
-      if (data.otherProviders) root.otherProviders = data.otherProviders
+      if (data.codex) root.codexData = data.codex
+      if (data.antigravityPro) root.antigravityProData = data.antigravityPro
+      if (data.otherGoogleAccounts) root.otherGoogleAccounts = data.otherGoogleAccounts
       if (data.totalActive !== undefined) root.totalActive = data.totalActive
       if (data.lastUpdated) root.lastUpdatedText = formatTime(data.lastUpdated)
     } catch (e) {
