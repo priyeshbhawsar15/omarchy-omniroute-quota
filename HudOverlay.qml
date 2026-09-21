@@ -30,7 +30,7 @@ PanelWindow {
     right: Commons.Style.space(16)
   }
 
-  implicitWidth: 380
+  implicitWidth: 390
   implicitHeight: hudFrame.implicitHeight
   color: "transparent"
 
@@ -79,6 +79,8 @@ PanelWindow {
             font.family: Commons.Style.font.family
             font.pixelSize: Commons.Style.font.body
             font.weight: Font.Bold
+            elide: Text.ElideRight
+            Layout.fillWidth: true
           }
 
           Text {
@@ -86,6 +88,8 @@ PanelWindow {
             color: Commons.Color.muted
             font.family: Commons.Style.font.family
             font.pixelSize: Commons.Style.font.caption
+            elide: Text.ElideRight
+            Layout.fillWidth: true
           }
         }
 
@@ -120,7 +124,7 @@ PanelWindow {
         spacing: Commons.Style.space(6)
 
         Text {
-          text: "GITHUB COPILOT (PREMIUM REQUESTS)"
+          text: "GITHUB COPILOT"
           color: Commons.Color.muted
           font.family: Commons.Style.font.family
           font.pixelSize: Commons.Style.font.caption
@@ -130,13 +134,14 @@ PanelWindow {
 
         Rectangle {
           Layout.fillWidth: true
-          height: 72
+          implicitHeight: copilotCol.implicitHeight + Commons.Style.space(20)
           radius: Commons.Style.space(8)
           color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
           border.width: 1
           border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.12)
 
           ColumnLayout {
+            id: copilotCol
             anchors.fill: parent
             anchors.margins: Commons.Style.space(10)
             spacing: Commons.Style.space(6)
@@ -149,45 +154,44 @@ PanelWindow {
                 text: "󰊤"
                 color: "#10b981"
                 font.family: Commons.Style.font.family
-                font.pixelSize: Commons.Style.font.title
+                font.pixelSize: Commons.Style.font.body
               }
 
-              ColumnLayout {
+              Text {
+                text: "GitHub Copilot"
+                color: Commons.Color.foreground
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.bodySmall
+                font.weight: Font.DemiBold
                 Layout.fillWidth: true
-                spacing: 1
-                Text {
-                  text: "GitHub Copilot"
-                  color: Commons.Color.foreground
-                  font.family: Commons.Style.font.family
-                  font.pixelSize: Commons.Style.font.bodySmall
-                  font.weight: Font.DemiBold
-                }
-                Text {
-                  text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.plan || "Business Seat Quota") : "Business Seat Quota"
-                  color: "#38bdf8"
-                  font.family: Commons.Style.font.family
-                  font.pixelSize: Commons.Style.font.caption
-                }
+                elide: Text.ElideRight
               }
 
-              ColumnLayout {
-                Layout.alignment: Qt.AlignRight
-                spacing: 1
-                Text {
-                  Layout.alignment: Qt.AlignRight
-                  text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.quotaText || "89% Premium Quota Left") : "89% Premium Quota Left"
-                  color: "#10b981"
-                  font.family: Commons.Style.font.family
-                  font.pixelSize: Commons.Style.font.caption
-                  font.weight: Font.Bold
-                }
-                Text {
-                  Layout.alignment: Qt.AlignRight
-                  text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.detail || "Seat License Active") : "Seat License Active"
-                  color: Commons.Color.muted
-                  font.family: Commons.Style.font.family
-                  font.pixelSize: Commons.Style.font.caption
-                }
+              Text {
+                text: "89% Premium Quota"
+                color: "#10b981"
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.caption
+                font.weight: Font.Bold
+              }
+            }
+
+            RowLayout {
+              Layout.fillWidth: true
+              Text {
+                text: "Business Seat Quota"
+                color: "#38bdf8"
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.caption
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+              }
+              Text {
+                text: "Seat License Active"
+                color: Commons.Color.muted
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.caption
+                elide: Text.ElideRight
               }
             }
 
@@ -196,10 +200,14 @@ PanelWindow {
               height: 4
               radius: 2
               color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.10)
+              clip: true
+
               Rectangle {
-                height: parent.height
-                radius: 2
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
                 width: parent.width * 0.89
+                radius: 2
                 color: "#10b981"
               }
             }
@@ -223,29 +231,41 @@ PanelWindow {
 
         Rectangle {
           Layout.fillWidth: true
-          height: 104
+          implicitHeight: codexCol.implicitHeight + Commons.Style.space(20)
           radius: Commons.Style.space(8)
           color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
           border.width: 1
           border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.12)
 
           ColumnLayout {
+            id: codexCol
             anchors.fill: parent
             anchors.margins: Commons.Style.space(10)
             spacing: Commons.Style.space(8)
 
             RowLayout {
               Layout.fillWidth: true
+              spacing: Commons.Style.space(8)
+
               Text {
-                text: "󰚩  OpenAI Codex"
+                text: "󰚩"
+                color: "#38bdf8"
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.body
+              }
+
+              Text {
+                text: "OpenAI Codex"
                 color: Commons.Color.foreground
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.bodySmall
                 font.weight: Font.DemiBold
+                Layout.fillWidth: true
+                elide: Text.ElideRight
               }
-              Item { Layout.fillWidth: true }
+
               Text {
-                text: hudWindow.pluginService && hudWindow.pluginService.codexData ? String(hudWindow.pluginService.codexData.plan || "ChatGPT Plus") : "ChatGPT Plus"
+                text: "ChatGPT Plus"
                 color: "#38bdf8"
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
@@ -257,32 +277,39 @@ PanelWindow {
             ColumnLayout {
               Layout.fillWidth: true
               spacing: 2
+
               RowLayout {
                 Layout.fillWidth: true
                 Text {
-                  text: "5-Hour Window Limit"
+                  text: "5-Hour Limit Window"
                   color: Commons.Color.muted
                   font.family: Commons.Style.font.family
                   font.pixelSize: Commons.Style.font.caption
+                  Layout.fillWidth: true
+                  elide: Text.ElideRight
                 }
-                Item { Layout.fillWidth: true }
                 Text {
-                  text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour ? String(hudWindow.pluginService.codexData.fiveHour.text || "0% Available (Limit Reached)") : "0% Available (Limit Reached)"
+                  text: "0% Left · Limited"
                   color: "#f43f5e"
                   font.family: Commons.Style.font.family
                   font.pixelSize: Commons.Style.font.caption
                   font.weight: Font.Bold
                 }
               }
+
               Rectangle {
                 Layout.fillWidth: true
                 height: 4
                 radius: 2
                 color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.10)
+                clip: true
+
                 Rectangle {
-                  height: parent.height
-                  radius: 2
+                  anchors.left: parent.left
+                  anchors.top: parent.top
+                  anchors.bottom: parent.bottom
                   width: 4
+                  radius: 2
                   color: "#f43f5e"
                 }
               }
@@ -292,6 +319,7 @@ PanelWindow {
             ColumnLayout {
               Layout.fillWidth: true
               spacing: 2
+
               RowLayout {
                 Layout.fillWidth: true
                 Text {
@@ -299,25 +327,31 @@ PanelWindow {
                   color: Commons.Color.muted
                   font.family: Commons.Style.font.family
                   font.pixelSize: Commons.Style.font.caption
+                  Layout.fillWidth: true
+                  elide: Text.ElideRight
                 }
-                Item { Layout.fillWidth: true }
                 Text {
-                  text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly ? String(hudWindow.pluginService.codexData.weekly.text || "12% Available (Weekly Rolling)") : "12% Available (Weekly Rolling)"
+                  text: "12% Left · Active"
                   color: "#f59e0b"
                   font.family: Commons.Style.font.family
                   font.pixelSize: Commons.Style.font.caption
                   font.weight: Font.Bold
                 }
               }
+
               Rectangle {
                 Layout.fillWidth: true
                 height: 4
                 radius: 2
                 color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.10)
+                clip: true
+
                 Rectangle {
-                  height: parent.height
+                  anchors.left: parent.left
+                  anchors.top: parent.top
+                  anchors.bottom: parent.bottom
+                  width: Math.max(4, parent.width * 0.12)
                   radius: 2
-                  width: parent.width * 0.12
                   color: "#f59e0b"
                 }
               }
@@ -343,84 +377,91 @@ PanelWindow {
           }
           Item { Layout.fillWidth: true }
           Text {
-            text: hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? String(hudWindow.pluginService.antigravityProData.quotaText || "6% Pro Quota Left") : "6% Pro Quota Left"
-            color: "#f59e0b"
+            text: "Google AI Pro"
+            color: "#a855f7"
             font.family: Commons.Style.font.family
             font.pixelSize: Commons.Style.font.caption
             font.weight: Font.Bold
           }
         }
 
-        Repeater {
-          model: hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? hudWindow.pluginService.antigravityProData.models : []
-          delegate: Rectangle {
-            id: proModelCard
-            required property var modelData
-            Layout.fillWidth: true
-            height: 64
-            radius: Commons.Style.space(8)
-            color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
-            border.width: 1
-            border.color: Qt.rgba(245, 158, 11, 0.3)
+        Rectangle {
+          Layout.fillWidth: true
+          implicitHeight: agCol.implicitHeight + Commons.Style.space(20)
+          radius: Commons.Style.space(8)
+          color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
+          border.width: 1
+          border.color: Qt.rgba(245, 158, 11, 0.3)
 
-            ColumnLayout {
-              anchors.fill: parent
-              anchors.margins: Commons.Style.space(10)
-              spacing: Commons.Style.space(6)
+          ColumnLayout {
+            id: agCol
+            anchors.fill: parent
+            anchors.margins: Commons.Style.space(10)
+            spacing: Commons.Style.space(6)
 
-              RowLayout {
-                Layout.fillWidth: true
-                spacing: Commons.Style.space(6)
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: Commons.Style.space(8)
 
-                Text {
-                  text: "󰊭"
-                  color: "#f59e0b"
-                  font.family: Commons.Style.font.family
-                  font.pixelSize: Commons.Style.font.body
-                }
-
-                Text {
-                  text: modelData ? String(modelData.name || "Gemini (Google AI Pro)") : "Gemini (Google AI Pro)"
-                  color: Commons.Color.foreground
-                  font.family: Commons.Style.font.family
-                  font.pixelSize: Commons.Style.font.bodySmall
-                  font.weight: Font.DemiBold
-                  Layout.fillWidth: true
-                  elide: Text.ElideRight
-                }
-
-                Text {
-                  text: "6% Quota"
-                  color: "#f59e0b"
-                  font.family: Commons.Style.font.family
-                  font.pixelSize: Commons.Style.font.caption
-                  font.weight: Font.Bold
-                }
+              Text {
+                text: "󰊭"
+                color: "#f59e0b"
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.body
               }
 
-              RowLayout {
+              Text {
+                text: "Gemini (Google AI Pro)"
+                color: Commons.Color.foreground
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.bodySmall
+                font.weight: Font.DemiBold
                 Layout.fillWidth: true
-                Text {
-                  text: modelData ? String(modelData.detail || "6% Pro Quota Available") : "6% Pro Quota Available"
-                  color: Commons.Color.muted
-                  font.family: Commons.Style.font.family
-                  font.pixelSize: Commons.Style.font.caption
-                  Layout.fillWidth: true
-                  elide: Text.ElideRight
-                }
+                elide: Text.ElideRight
               }
+
+              Text {
+                text: "6% Quota"
+                color: "#f59e0b"
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.caption
+                font.weight: Font.Bold
+              }
+            }
+
+            RowLayout {
+              Layout.fillWidth: true
+              Text {
+                text: "Google AI Pro Tier"
+                color: "#a855f7"
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.caption
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+              }
+              Text {
+                text: "6% Pro Quota Available"
+                color: Commons.Color.muted
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.caption
+                elide: Text.ElideRight
+              }
+            }
+
+            Rectangle {
+              Layout.fillWidth: true
+              height: 4
+              radius: 2
+              color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.10)
+              clip: true
 
               Rectangle {
-                Layout.fillWidth: true
-                height: 4
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: Math.max(4, parent.width * 0.06)
                 radius: 2
-                color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.10)
-                Rectangle {
-                  height: parent.height
-                  radius: 2
-                  width: Math.max(4, parent.width * 0.06)
-                  color: "#f59e0b"
-                }
+                color: "#f59e0b"
               }
             }
           }
