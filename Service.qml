@@ -17,7 +17,8 @@ Scope {
   readonly property string stateFilePath: homeDir + "/.local/state/omarchy/omniroute-quota/state.json"
 
   property var codexData: ({})
-  property var geminiModels: []
+  property var copilotData: ({})
+  property var antigravityData: ({})
   property var otherProviders: []
   property int totalActive: 0
   property string lastUpdatedText: ""
@@ -36,8 +37,9 @@ Scope {
     try {
       var data = JSON.parse(jsonText)
       if (data.codex) root.codexData = data.codex
-      if (data.gemini) root.geminiModels = data.gemini
-      if (data.providers) root.otherProviders = data.providers
+      if (data.copilot) root.copilotData = data.copilot
+      if (data.antigravity) root.antigravityData = data.antigravity
+      if (data.otherProviders) root.otherProviders = data.otherProviders
       if (data.totalActive !== undefined) root.totalActive = data.totalActive
       if (data.lastUpdated) root.lastUpdatedText = formatTime(data.lastUpdated)
     } catch (e) {
