@@ -6,6 +6,7 @@ import time
 import urllib.request
 import urllib.error
 from pathlib import Path
+from datetime import datetime
 
 HOME = Path(os.environ.get("HOME", "/tmp"))
 CONFIG_PATH = HOME / ".config/omarchy/omniroute-quota.json"
@@ -18,8 +19,8 @@ DEFAULT_CONFIG = {
     "refreshIntervalSeconds": 60,
     "targetScreen": "DP-4",
     "position": "top-right",
-    "width": 320,
-    "topMargin": 40,
+    "width": 360,
+    "topMargin": 48,
     "rightMargin": 16
 }
 
@@ -35,16 +36,30 @@ def load_config():
         return DEFAULT_CONFIG
 
 def format_duration(ms):
-    if not ms or ms <= 0: return ""
+    if not ms or ms <= 0: return "Active"
     seconds = int(ms / 1000)
-    hours = seconds // 3600
+    days = seconds // 86400
+    hours = (seconds % 86400) // 3600
     minutes = (seconds % 3600) // 60
-    if hours > 0:
+    if days > 0:
+        return f"Reset in {days}d {hours}h"
+    elif hours > 0:
         return f"Reset in {hours}h {minutes}m"
     elif minutes > 0:
         return f"Reset in {minutes}m"
     else:
         return f"Reset in {seconds}s"
+
+def parse_iso_duration(iso_str):
+    if not iso_str: return None
+    try:
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        rem_seconds = int(dt.timestamp() - time.time())
+        if rem_seconds > 0:
+            return format_duration(rem_seconds * 1000)
+    except Exception:
+        pass
+    return None
 
 def fetch_data():
     config = load_config()
@@ -62,98 +77,132 @@ def fetch_data():
         "status": "ok",
         "lastUpdated": int(time.time()),
         "endpoint": endpoint,
+        "codex": {
+            "name": "OpenAI Codex",
+            "plan": "ChatGPT Plus",
+            "fiveHour": { "status": "active", "percent": 100, "label": "5-Hour Window", "text": "100% Available" },
+            "weekly": { "status": "active", "percent": 100, "label": "Weekly Limit", "text": "100% Available" }
+        },
+        "gemini": [],
         "providers": [],
         "totalActive": 0,
-        "authNotice": "",
         "error": None
     }
     
-    # Query cooldowns
-    cooldowns = {}
+    # 1. Cooldowns
+    cooldowns = []
     try:
         req_cd = urllib.request.Request(f"{endpoint}/api/resilience/model-cooldowns", headers=headers)
         with urllib.request.urlopen(req_cd, timeout=5) as resp:
             cd_data = json.loads(resp.read().decode("utf-8"))
-            items = cd_data.get("items", [])
-            for item in items:
-                conn_id = item.get("connectionId")
-                provider_name = item.get("provider")
-                key = conn_id or provider_name
-                cooldowns[key] = item
+            cooldowns = cd_data.get("items", [])
     except Exception:
         pass
 
-    # Query connections from /api/providers
+    # 2. Connections
+    connections = []
     try:
         req = urllib.request.Request(f"{endpoint}/api/providers", headers=headers)
         with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             connections = data.get("connections", [])
-            providers_list = []
-            
-            for c in connections:
-                provider_id = c.get("provider", "unknown")
-                conn_id = c.get("id", "")
-                is_active = c.get("isActive", True)
-                test_status = c.get("testStatus", "active")
-                p_data = c.get("providerSpecificData") or {}
-                
-                # Plan / Tier
-                plan_name = p_data.get("subscriptionTier") or p_data.get("plan") or p_data.get("workspacePlanType") or ""
-                if plan_name: plan_name = plan_name.title()
-                
-                # Cooldown / Quota check
-                cd_info = cooldowns.get(conn_id) or cooldowns.get(provider_id)
-                percent = 100
-                reset_text = plan_name if plan_name else "Active"
-                status = "active" if (is_active and test_status == "active") else "inactive"
-                
-                if cd_info:
-                    reason = cd_info.get("reason", "cooldown")
-                    rem_ms = cd_info.get("remainingMs", 0)
-                    percent = 0 if reason == "quota_exhausted" else 20
-                    reset_text = f"Quota Low · {format_duration(rem_ms)}" if rem_ms > 0 else "Quota Low"
-                    status = "exhausted" if percent == 0 else "cooldown"
-                elif not is_active:
-                    percent = 0
-                    reset_text = "Disabled"
-                    status = "disabled"
-                
-                # Clean display name
-                name_map = {
-                    "github": "GitHub Copilot",
-                    "antigravity": "Google Antigravity",
-                    "codex": "OpenAI Codex",
-                    "chatgpt-web": "ChatGPT Web",
-                    "openrouter": "OpenRouter",
-                    "aihorde": "AI Horde"
-                }
-                display_name = name_map.get(provider_id, provider_id.replace("-", " ").title())
-                if plan_name and plan_name not in display_name:
-                    display_name += f" ({plan_name})"
-                
-                providers_list.append({
-                    "id": conn_id or provider_id,
-                    "provider": provider_id,
-                    "name": display_name,
-                    "plan": plan_name,
-                    "status": status,
-                    "quotaPercent": percent,
-                    "resetIn": reset_text,
-                    "isActive": is_active
-                })
-            
-            # Sort: active/healthy first, then cooldown/disabled
-            providers_list.sort(key=lambda x: (0 if x["status"] == "active" else 1, x["name"]))
-            result["providers"] = providers_list
-            result["totalActive"] = len([p for p in providers_list if p["status"] == "active"])
-            save_state(result)
-            return result
     except Exception as e:
         result["status"] = "error"
         result["error"] = str(e)
         save_state(result)
         return result
+
+    # Process Codex Rate Limits
+    for c in connections:
+        if c.get("provider") == "codex":
+            pool = c.get("codexAccountPool") or {}
+            children = pool.get("children", [])
+            p_data = c.get("providerSpecificData") or {}
+            plan = p_data.get("workspacePlanType", "Plus").title()
+            result["codex"]["plan"] = f"ChatGPT {plan}"
+            
+            # Check 5h / 7d windows in children
+            for child in children:
+                scope = child.get("key", {}).get("scope")
+                if scope == "codex":
+                    cooldown = child.get("cooldown") or {}
+                    windows = child.get("quota", {}).get("windows") or {}
+                    if cooldown.get("active"):
+                        rl_until = cooldown.get("rateLimitedUntil")
+                        dur_text = parse_iso_duration(rl_until) or "Rate Limited"
+                        result["codex"]["fiveHour"] = { "status": "exhausted", "percent": 0, "label": "5-Hour Window", "text": f"Limited · {dur_text}" }
+                    
+                    if windows.get("7d"):
+                        result["codex"]["weekly"] = { "status": "exhausted", "percent": 0, "label": "Weekly Limit", "text": "Weekly Cap Reached" }
+                    elif windows.get("5h"):
+                        result["codex"]["fiveHour"] = { "status": "exhausted", "percent": 0, "label": "5-Hour Window", "text": "5h Window Reached" }
+
+    # Process Gemini / Antigravity Model Quotas
+    antigravity_conns = [c for c in connections if c.get("provider") == "antigravity"]
+    total_ag = len(antigravity_conns)
+    active_ag = len([c for c in antigravity_conns if c.get("isActive")])
+    
+    # Model breakdown
+    gemini_models = [
+        { "id": "gemini-3.7-flash", "name": "Gemini 3.7 Flash High", "tag": "3.7 Flash", "rawModel": "gemini-3.7-flash-high" },
+        { "id": "gemini-2.5-pro", "name": "Gemini 2.5 Pro", "tag": "2.5 Pro", "rawModel": "gemini-2.5-pro" },
+        { "id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "tag": "2.5 Flash", "rawModel": "gemini-2.5-flash" },
+        { "id": "claude-sonnet", "name": "Claude 3.7 / 4 Sonnet (AG)", "tag": "Claude Sonnet", "rawModel": "claude-sonnet" }
+    ]
+    
+    gemini_cards = []
+    for gm in gemini_models:
+        model_name = gm["name"]
+        raw = gm["rawModel"]
+        # Find matching cooldowns
+        matched_cds = [cd for cd in cooldowns if cd.get("provider") == "antigravity" and raw in cd.get("model", "")]
+        
+        if matched_cds:
+            # Sort by highest remainingMs
+            max_rem = max([cd.get("remainingMs", 0) for cd in matched_cds])
+            dur_text = format_duration(max_rem)
+            cooldown_count = len(matched_cds)
+            status_text = f"Limited ({cooldown_count}/{total_ag} accts) · {dur_text}"
+            percent = int(max(0, (total_ag - cooldown_count) / max(1, total_ag) * 100))
+            gemini_cards.append({
+                "name": model_name,
+                "tag": gm["tag"],
+                "status": "cooldown" if percent > 0 else "exhausted",
+                "percent": percent,
+                "detail": status_text,
+                "icon": "󰊭"
+            })
+        else:
+            gemini_cards.append({
+                "name": model_name,
+                "tag": gm["tag"],
+                "status": "active",
+                "percent": 100,
+                "detail": f"100% Available ({active_ag} accounts)",
+                "icon": "󰊭"
+            })
+    result["gemini"] = gemini_cards
+
+    # Other providers summary
+    other_list = []
+    for c in connections:
+        prov = c.get("provider")
+        if prov in ("codex", "antigravity"): continue
+        is_act = c.get("isActive", True)
+        name_map = { "github": "GitHub Copilot", "chatgpt-web": "ChatGPT Web", "openrouter": "OpenRouter", "aihorde": "AI Horde" }
+        d_name = name_map.get(prov, prov.replace("-", " ").title())
+        other_list.append({
+            "name": d_name,
+            "provider": prov,
+            "status": "active" if is_act else "disabled",
+            "percent": 100 if is_act else 0,
+            "detail": "Connected & Active" if is_act else "Disabled"
+        })
+    result["providers"] = other_list
+    result["totalActive"] = len([c for c in connections if c.get("isActive")])
+    
+    save_state(result)
+    return result
 
 def save_state(state):
     STATE_DIR.mkdir(parents=True, exist_ok=True)

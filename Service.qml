@@ -16,9 +16,10 @@ Scope {
     : (homeDir + "/.config/omarchy/plugins/priyesh.omniroute-quota/bin/omniroute-quota")
   readonly property string stateFilePath: homeDir + "/.local/state/omarchy/omniroute-quota/state.json"
 
-  property var providers: []
+  property var codexData: ({})
+  property var geminiModels: []
+  property var otherProviders: []
   property int totalActive: 0
-  property string authNotice: ""
   property string lastUpdatedText: ""
   property bool hudVisible: true
 
@@ -34,9 +35,10 @@ Scope {
     if (!jsonText || jsonText.length === 0) return
     try {
       var data = JSON.parse(jsonText)
-      if (data.providers) root.providers = data.providers
+      if (data.codex) root.codexData = data.codex
+      if (data.gemini) root.geminiModels = data.gemini
+      if (data.providers) root.otherProviders = data.providers
       if (data.totalActive !== undefined) root.totalActive = data.totalActive
-      root.authNotice = data.authNotice || ""
       if (data.lastUpdated) root.lastUpdatedText = formatTime(data.lastUpdated)
     } catch (e) {
       console.warn("omniroute-quota: parse error", e)
