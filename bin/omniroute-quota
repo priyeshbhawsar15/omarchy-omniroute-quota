@@ -6,7 +6,6 @@ import time
 import urllib.request
 import urllib.error
 from pathlib import Path
-from datetime import datetime
 
 HOME = Path(os.environ.get("HOME", "/tmp"))
 CONFIG_PATH = HOME / ".config/omarchy/omniroute-quota.json"
@@ -88,10 +87,7 @@ def fetch_data():
             "quotaText": "6% Pro Quota Left",
             "detail": "6% Pro Quota Remaining · Active Tier",
             "models": [
-                { "name": "Gemini 2.5 Pro", "tag": "2.5 Pro", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available", "icon": "󰊭" },
-                { "name": "Gemini 2.5 Flash", "tag": "2.5 Flash", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available", "icon": "󰊭" },
-                { "name": "Gemini 3.7 Flash High", "tag": "3.7 Flash", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available", "icon": "󰊭" },
-                { "name": "Claude 3.7 Sonnet (AG)", "tag": "Claude Sonnet", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available", "icon": "󰊭" }
+                { "name": "Gemini (Google AI Pro)", "tag": "Gemini Pro", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available · Active Tier", "icon": "󰊭" }
             ]
         },
         "otherGoogleAccounts": [],
@@ -135,7 +131,6 @@ def fetch_data():
         sc_email = sc.get("email") or sc.get("name") or "Starter Account"
         is_act = sc.get("isActive", True)
         
-        # Check cooldowns for this specific connection
         sc_cds = [cd for cd in cooldowns if cd.get("connectionId") == sc_id]
         if sc_cds:
             max_rem = max([cd.get("remainingMs", 0) for cd in sc_cds])
@@ -166,8 +161,6 @@ def fetch_data():
             })
     
     result["otherGoogleAccounts"] = starter_cards
-    
-    # Save & return
     save_state(result)
     return result
 
