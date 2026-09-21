@@ -5,7 +5,7 @@ import qs.Commons as Commons
 Rectangle {
   id: card
 
-  required property var modelData
+  property var modelData: null
   property color accent: Commons.Color.accent
 
   readonly property string provider: modelData && modelData.provider ? String(modelData.provider) : ""
