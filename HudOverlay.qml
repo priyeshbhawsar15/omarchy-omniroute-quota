@@ -39,7 +39,7 @@ PanelWindow {
   color: "transparent"
 
   WlrLayershell.namespace: "omniroute-quota-hud"
-  WlrLayershell.layer: WlrLayer.Bottom
+  WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
   exclusionMode: ExclusionMode.Ignore
 

@@ -1,8 +1,10 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Quickshell
 import Quickshell.Io
 
-QtObject {
+Scope {
   id: root
 
   property var manifest: null
@@ -18,8 +20,6 @@ QtObject {
   property string authNotice: ""
   property string lastUpdatedText: ""
   property bool hudVisible: true
-
-  property var hudInstance: null
 
   function formatTime(timestamp) {
     if (!timestamp) return ""
@@ -47,7 +47,6 @@ QtObject {
 
   function toggle() {
     root.hudVisible = !root.hudVisible
-    if (root.hudInstance) root.hudInstance.visible = root.hudVisible
   }
 
   Process {
@@ -71,21 +70,12 @@ QtObject {
 
   Component.onCompleted: {
     root.refresh()
-    Qt.callLater(function() {
-      var comp = Qt.createComponent(Qt.resolvedUrl("HudOverlay.qml"))
-      if (comp.status === Component.Ready) {
-        root.hudInstance = comp.createObject(root, { pluginService: root, visible: root.hudVisible })
-      } else {
-        console.warn("omniroute-quota: failed to load HudOverlay", comp.errorString())
-      }
-    })
   }
 
-  Component.onDestruction: {
-    if (root.hudInstance) {
-      root.hudInstance.destroy()
-      root.hudInstance = null
-    }
+  HudOverlay {
+    id: hudWindow
+    pluginService: root
+    visible: root.hudVisible
   }
 
   IpcHandler {
@@ -93,7 +83,7 @@ QtObject {
 
     function refresh(): void { root.refresh() }
     function toggle(): void { root.toggle() }
-    function show(): void { root.hudVisible = true; if (root.hudInstance) root.hudInstance.visible = true }
-    function hide(): void { root.hudVisible = false; if (root.hudInstance) root.hudInstance.visible = false }
+    function show(): void { root.hudVisible = true }
+    function hide(): void { root.hudVisible = false }
   }
 }
