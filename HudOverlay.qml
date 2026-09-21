@@ -1,5 +1,3 @@
-pragma ComponentBehavior: Bound
-
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -30,12 +28,12 @@ PanelWindow {
   }
 
   margins {
-    top: Commons.Style.space(40)
+    top: Commons.Style.space(48)
     right: Commons.Style.space(16)
-    bottom: Commons.Style.space(40)
+    bottom: Commons.Style.space(48)
   }
 
-  implicitWidth: 320
+  implicitWidth: 350
   color: "transparent"
 
   WlrLayershell.namespace: "omniroute-quota-hud"
@@ -47,9 +45,9 @@ PanelWindow {
     id: hudFrame
     anchors.fill: parent
     radius: Commons.Style.space(12)
-    color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.75)
+    color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.80)
     border.width: 1
-    border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.15)
+    border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.16)
     clip: true
 
     ColumnLayout {
@@ -82,7 +80,7 @@ PanelWindow {
           }
 
           Text {
-            text: hudWindow.pluginService ? (hudWindow.pluginService.totalActive + " active providers") : "Connecting…"
+            text: hudWindow.pluginService ? (hudWindow.pluginService.totalActive + " active connections") : "Connecting…"
             color: Commons.Color.muted
             font.family: Commons.Style.font.family
             font.pixelSize: Commons.Style.font.caption
@@ -90,10 +88,10 @@ PanelWindow {
         }
 
         Rectangle {
-          width: Commons.Style.space(26)
-          height: Commons.Style.space(26)
-          radius: Commons.Style.space(13)
-          color: refreshHover.hovered ? Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.15) : Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.08)
+          width: Commons.Style.space(28)
+          height: Commons.Style.space(28)
+          radius: Commons.Style.space(14)
+          color: refreshHover.hovered ? Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.18) : Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.08)
 
           Text {
             anchors.centerIn: parent
@@ -114,28 +112,6 @@ PanelWindow {
         }
       }
 
-      // Notice if client token
-      Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: noticeText.implicitHeight + 10
-        radius: 6
-        color: Qt.rgba(59, 130, 246, 0.15)
-        border.width: 1
-        border.color: Qt.rgba(59, 130, 246, 0.3)
-        visible: hudWindow.pluginService && hudWindow.pluginService.authNotice.length > 0
-
-        Text {
-          id: noticeText
-          anchors.fill: parent
-          anchors.margins: 5
-          text: hudWindow.pluginService ? hudWindow.pluginService.authNotice : ""
-          color: "#93c5fd"
-          font.family: Commons.Style.font.family
-          font.pixelSize: Commons.Style.font.caption
-          wrapMode: Text.WordWrap
-        }
-      }
-
       // Provider List
       ListView {
         id: providerList
@@ -146,7 +122,7 @@ PanelWindow {
         model: hudWindow.pluginService ? hudWindow.pluginService.providers : []
 
         delegate: QuotaCard {
-          required property var modelData
+          modelData: modelData
           width: providerList.width
         }
       }
