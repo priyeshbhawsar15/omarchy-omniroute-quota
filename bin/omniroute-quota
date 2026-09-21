@@ -34,21 +34,6 @@ def load_config():
     except Exception:
         return DEFAULT_CONFIG
 
-def format_duration(ms):
-    if not ms or ms <= 0: return "Active"
-    seconds = int(ms / 1000)
-    days = seconds // 86400
-    hours = (seconds % 86400) // 3600
-    minutes = (seconds % 3600) // 60
-    if days > 0:
-        return f"Reset in {days}d {hours}h"
-    elif hours > 0:
-        return f"Reset in {hours}h {minutes}m"
-    elif minutes > 0:
-        return f"Reset in {minutes}m"
-    else:
-        return f"Reset in {seconds}s"
-
 def fetch_data():
     config = load_config()
     endpoint = config.get("endpoint", "https://omniroute.home.priyeshbhawsar.com").rstrip("/")
@@ -90,90 +75,10 @@ def fetch_data():
                 { "name": "Gemini (Google AI Pro)", "tag": "Gemini Pro", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available · Active Tier", "icon": "󰊭" }
             ]
         },
-        "otherGoogleAccounts": [],
-        "totalActive": 5,
+        "totalActive": 3,
         "error": None
     }
     
-    # 1. Cooldowns
-    cooldowns = []
-    try:
-        req_cd = urllib.request.Request(f"{endpoint}/api/resilience/model-cooldowns", headers=headers)
-        with urllib.request.urlopen(req_cd, timeout=5) as resp:
-            cd_data = json.loads(resp.read().decode("utf-8"))
-            cooldowns = cd_data.get("items", [])
-    except Exception:
-        pass
-
-    # 2. Connections
-    connections = []
-    try:
-        req = urllib.request.Request(f"{endpoint}/api/providers", headers=headers)
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            connections = data.get("connections", [])
-    except Exception as e:
-        result["status"] = "error"
-        result["error"] = str(e)
-        save_state(result)
-        return result
-
-    # --- PROCESS OTHER GOOGLE ACCOUNTS (Starter Quotas) ---
-    starter_conns = [c for c in connections if c.get("provider") == "antigravity" and (
-        c.get("providerSpecificData", {}).get("plan") != "Pro" and 
-        c.get("providerSpecificData", {}).get("tier") != "g1-pro-tier" and 
-        "pro" not in str(c.get("providerSpecificData", {}).get("subscriptionTier", "")).lower()
-    )]
-    
-    starter_cards = []
-    for sc in starter_conns:
-        sc_id = sc.get("id", "")
-        sc_email = sc.get("email") or sc.get("name") or "Starter Account"
-        is_act = sc.get("isActive", True)
-        
-        # Match cooldowns on this specific connection
-        sc_cds = [cd for cd in cooldowns if cd.get("connectionId") == sc_id]
-        gemini_cds = [cd for cd in sc_cds if "gemini" in cd.get("model", "").lower()]
-        claude_cds = [cd for cd in sc_cds if "claude" in cd.get("model", "").lower()]
-        
-        if gemini_cds:
-            max_rem = max([cd.get("remainingMs", 0) for cd in gemini_cds])
-            dur_text = format_duration(max_rem)
-            starter_cards.append({
-                "account": sc_email,
-                "tier": "Starter Quota",
-                "percent": 0,
-                "status": "exhausted",
-                "detail": f"0% Gemini Quota · Gemini 3.7 Exhausted ({dur_text})"
-            })
-        elif claude_cds:
-            max_rem = max([cd.get("remainingMs", 0) for cd in claude_cds])
-            dur_text = format_duration(max_rem)
-            starter_cards.append({
-                "account": sc_email,
-                "tier": "Starter Quota",
-                "percent": 100,
-                "status": "active",
-                "detail": f"100% Gemini Available (Claude cooldown · {dur_text})"
-            })
-        elif not is_act:
-            starter_cards.append({
-                "account": sc_email,
-                "tier": "Starter Quota",
-                "percent": 0,
-                "status": "disabled",
-                "detail": "0% Quota · Account Paused"
-            })
-        else:
-            starter_cards.append({
-                "account": sc_email,
-                "tier": "Starter Quota",
-                "percent": 100,
-                "status": "active",
-                "detail": "100% Gemini Available · Standby Account"
-            })
-    
-    result["otherGoogleAccounts"] = starter_cards
     save_state(result)
     return result
 

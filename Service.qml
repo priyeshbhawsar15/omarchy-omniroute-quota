@@ -19,8 +19,7 @@ Scope {
   property var copilotData: ({})
   property var codexData: ({})
   property var antigravityProData: ({})
-  property var otherGoogleAccounts: []
-  property int totalActive: 0
+  property int totalActive: 3
   property string lastUpdatedText: ""
   property bool hudVisible: true
 
@@ -39,7 +38,6 @@ Scope {
       if (data.copilot) root.copilotData = data.copilot
       if (data.codex) root.codexData = data.codex
       if (data.antigravityPro) root.antigravityProData = data.antigravityPro
-      if (data.otherGoogleAccounts) root.otherGoogleAccounts = data.otherGoogleAccounts
       if (data.totalActive !== undefined) root.totalActive = data.totalActive
       if (data.lastUpdated) root.lastUpdatedText = formatTime(data.lastUpdated)
     } catch (e) {

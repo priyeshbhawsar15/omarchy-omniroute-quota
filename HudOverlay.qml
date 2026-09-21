@@ -391,7 +391,7 @@ PanelWindow {
                     }
 
                     Text {
-                      text: modelData ? String(modelData.name || "") : ""
+                      text: modelData ? String(modelData.name || "Gemini (Google AI Pro)") : "Gemini (Google AI Pro)"
                       color: Commons.Color.foreground
                       font.family: Commons.Style.font.family
                       font.pixelSize: Commons.Style.font.bodySmall
@@ -431,95 +431,6 @@ PanelWindow {
                       radius: 2
                       width: Math.max(4, parent.width * 0.06)
                       color: "#f59e0b"
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          // SECTION 4: OTHER GOOGLE ACCOUNTS (STARTER QUOTAS)
-          ColumnLayout {
-            Layout.fillWidth: true
-            spacing: Commons.Style.space(6)
-
-            Text {
-              text: "OTHER GOOGLE ACCOUNTS (STARTER)"
-              color: Commons.Color.muted
-              font.family: Commons.Style.font.family
-              font.pixelSize: Commons.Style.font.caption
-              font.weight: Font.Bold
-              font.letterSpacing: 1
-            }
-
-            Repeater {
-              model: hudWindow.pluginService ? hudWindow.pluginService.otherGoogleAccounts : []
-              delegate: Rectangle {
-                id: otherAccountCard
-                required property var modelData
-                Layout.fillWidth: true
-                height: 64
-                radius: Commons.Style.space(8)
-                color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
-                border.width: 1
-                border.color: (modelData && modelData.status === "exhausted") ? Qt.rgba(244, 63, 94, 0.3) : Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.12)
-
-                readonly property color cardStatusColor: (modelData && modelData.status === "exhausted") ? "#f43f5e" : ((modelData && modelData.status === "disabled") ? "#64748b" : "#10b981")
-
-                ColumnLayout {
-                  anchors.fill: parent
-                  anchors.margins: Commons.Style.space(8)
-                  spacing: 4
-
-                  RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Commons.Style.space(6)
-
-                    Rectangle {
-                      width: 8
-                      height: 8
-                      radius: 4
-                      color: otherAccountCard.cardStatusColor
-                    }
-
-                    Text {
-                      text: modelData ? String(modelData.account || "") : ""
-                      color: Commons.Color.foreground
-                      font.family: Commons.Style.font.family
-                      font.pixelSize: Commons.Style.font.caption
-                      font.weight: Font.DemiBold
-                      Layout.fillWidth: true
-                      elide: Text.ElideRight
-                    }
-
-                    Text {
-                      text: modelData && modelData.percent > 0 ? (modelData.percent + "% Gemini") : "0% Gemini"
-                      color: otherAccountCard.cardStatusColor
-                      font.family: Commons.Style.font.family
-                      font.pixelSize: Commons.Style.font.caption
-                      font.weight: Font.Bold
-                    }
-                  }
-
-                  Text {
-                    text: modelData ? String(modelData.detail || "") : ""
-                    color: (modelData && modelData.status === "exhausted") ? "#fca5a5" : Commons.Color.muted
-                    font.family: Commons.Style.font.family
-                    font.pixelSize: Commons.Style.font.caption
-                    Layout.fillWidth: true
-                    elide: Text.ElideRight
-                  }
-
-                  Rectangle {
-                    Layout.fillWidth: true
-                    height: 3
-                    radius: 1.5
-                    color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.10)
-                    Rectangle {
-                      height: parent.height
-                      radius: 1.5
-                      width: Math.max(4, parent.width * ((modelData ? Number(modelData.percent) : 0) / 100))
-                      color: otherAccountCard.cardStatusColor
                     }
                   }
                 }
