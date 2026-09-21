@@ -146,7 +146,7 @@ PanelWindow {
         model: hudWindow.pluginService ? hudWindow.pluginService.providers : []
 
         delegate: QuotaCard {
-          modelData: model.modelData
+          required property var modelData
           width: providerList.width
         }
       }
