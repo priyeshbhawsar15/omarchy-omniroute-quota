@@ -35,7 +35,7 @@ PanelWindow {
   color: "transparent"
 
   WlrLayershell.namespace: "omniroute-quota-hud"
-  WlrLayershell.layer: WlrLayer.Top
+  WlrLayershell.layer: WlrLayer.Bottom
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
   exclusionMode: ExclusionMode.Ignore
 
@@ -44,9 +44,9 @@ PanelWindow {
     width: hudWindow.implicitWidth
     implicitHeight: mainCol.implicitHeight + Commons.Style.space(28)
     radius: Commons.Style.space(12)
-    color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.88)
+    color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.85)
     border.width: 1
-    border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.18)
+    border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.16)
     clip: true
 
     ColumnLayout {
@@ -152,7 +152,7 @@ PanelWindow {
 
               Text {
                 text: "󰊤"
-                color: "#10b981"
+                color: Commons.Color.accent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.body
               }
@@ -169,7 +169,7 @@ PanelWindow {
 
               Text {
                 text: "89% Premium Quota"
-                color: "#10b981"
+                color: Commons.Color.accent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 font.weight: Font.Bold
@@ -180,7 +180,7 @@ PanelWindow {
               Layout.fillWidth: true
               Text {
                 text: "Business Seat Quota"
-                color: "#38bdf8"
+                color: Commons.Color.accent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 elide: Text.ElideRight
@@ -208,7 +208,7 @@ PanelWindow {
                 anchors.bottom: parent.bottom
                 width: parent.width * 0.89
                 radius: 2
-                color: "#10b981"
+                color: Commons.Color.accent
               }
             }
           }
@@ -249,7 +249,7 @@ PanelWindow {
 
               Text {
                 text: "󰚩"
-                color: "#38bdf8"
+                color: Commons.Color.accent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.body
               }
@@ -266,7 +266,7 @@ PanelWindow {
 
               Text {
                 text: "ChatGPT Plus"
-                color: "#38bdf8"
+                color: Commons.Color.accent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 font.weight: Font.Bold
@@ -290,7 +290,7 @@ PanelWindow {
                 }
                 Text {
                   text: "0% Left · Limited"
-                  color: "#f43f5e"
+                  color: Commons.Color.urgent
                   font.family: Commons.Style.font.family
                   font.pixelSize: Commons.Style.font.caption
                   font.weight: Font.Bold
@@ -310,7 +310,7 @@ PanelWindow {
                   anchors.bottom: parent.bottom
                   width: 4
                   radius: 2
-                  color: "#f43f5e"
+                  color: Commons.Color.urgent
                 }
               }
             }
@@ -332,7 +332,7 @@ PanelWindow {
                 }
                 Text {
                   text: "12% Left · Active"
-                  color: "#f59e0b"
+                  color: Commons.Color.accent
                   font.family: Commons.Style.font.family
                   font.pixelSize: Commons.Style.font.caption
                   font.weight: Font.Bold
@@ -352,7 +352,7 @@ PanelWindow {
                   anchors.bottom: parent.bottom
                   width: Math.max(4, parent.width * 0.12)
                   radius: 2
-                  color: "#f59e0b"
+                  color: Commons.Color.accent
                 }
               }
             }
@@ -378,7 +378,7 @@ PanelWindow {
           Item { Layout.fillWidth: true }
           Text {
             text: "Google AI Pro"
-            color: "#a855f7"
+            color: Commons.Color.accent
             font.family: Commons.Style.font.family
             font.pixelSize: Commons.Style.font.caption
             font.weight: Font.Bold
@@ -391,7 +391,7 @@ PanelWindow {
           radius: Commons.Style.space(8)
           color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
           border.width: 1
-          border.color: Qt.rgba(245, 158, 11, 0.3)
+          border.color: Qt.rgba(Commons.Color.accent.r, Commons.Color.accent.g, Commons.Color.accent.b, 0.3)
 
           ColumnLayout {
             id: agCol
@@ -405,7 +405,7 @@ PanelWindow {
 
               Text {
                 text: "󰊭"
-                color: "#f59e0b"
+                color: Commons.Color.accent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.body
               }
@@ -422,7 +422,7 @@ PanelWindow {
 
               Text {
                 text: "6% Quota"
-                color: "#f59e0b"
+                color: Commons.Color.accent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 font.weight: Font.Bold
@@ -433,7 +433,7 @@ PanelWindow {
               Layout.fillWidth: true
               Text {
                 text: "Google AI Pro Tier"
-                color: "#a855f7"
+                color: Commons.Color.accent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 elide: Text.ElideRight
@@ -461,7 +461,7 @@ PanelWindow {
                 anchors.bottom: parent.bottom
                 width: Math.max(4, parent.width * 0.06)
                 radius: 2
-                color: "#f59e0b"
+                color: Commons.Color.accent
               }
             }
           }
