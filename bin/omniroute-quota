@@ -16,12 +16,18 @@ STATE_FILE = STATE_DIR / "state.json"
 DEFAULT_CONFIG = {
     "endpoint": "https://omniroute.home.priyeshbhawsar.com",
     "token": "sk-cbd864e458119963-45d2d6-e35a047c",
-    "refreshIntervalSeconds": 30,
+    "refreshIntervalSeconds": 15,
     "targetScreen": "DP-4",
     "position": "top-right",
     "width": 390,
     "topMargin": 48,
-    "rightMargin": 16
+    "rightMargin": 16,
+    "customQuotas": {
+        "copilotPercent": 89,
+        "antigravityPercent": 6,
+        "codexFiveHourPercent": 0,
+        "codexWeeklyPercent": 12
+    }
 }
 
 def load_config():
@@ -65,6 +71,7 @@ def fetch_data():
     config = load_config()
     endpoint = config.get("endpoint", "https://omniroute.home.priyeshbhawsar.com").rstrip("/")
     token = config.get("token", "").strip()
+    custom_quotas = config.get("customQuotas", {})
     
     headers = {
         "User-Agent": "OmniRoute-Quickshell-Widget/1.0",
@@ -72,6 +79,12 @@ def fetch_data():
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
+    
+    # Baseline quotas from customQuotas or server
+    copilot_pct = int(custom_quotas.get("copilotPercent", 89))
+    ag_pct = int(custom_quotas.get("antigravityPercent", 6))
+    codex_5h_pct = int(custom_quotas.get("codexFiveHourPercent", 0))
+    codex_7d_pct = int(custom_quotas.get("codexWeeklyPercent", 12))
     
     result = {
         "status": "ok",
@@ -81,25 +94,42 @@ def fetch_data():
             "name": "GitHub Copilot",
             "plan": "Business Seat Quota",
             "status": "active",
-            "percent": 89,
-            "quotaText": "89% Premium Quota Left",
-            "detail": "89% Premium Requests Remaining · Seat License"
+            "percent": copilot_pct,
+            "quotaText": f"{copilot_pct}% Premium Quota Left",
+            "detail": f"{copilot_pct}% Premium Requests Remaining · Seat License"
         },
         "codex": {
             "name": "OpenAI Codex",
             "plan": "ChatGPT Plus",
-            "fiveHour": { "status": "exhausted", "percent": 0, "label": "5-Hour Window", "text": "0% Available (Limit Reached)" },
-            "weekly": { "status": "cooldown", "percent": 12, "label": "Weekly Limit", "text": "12% Available (Weekly Rolling)" }
+            "fiveHour": {
+                "status": "exhausted" if codex_5h_pct <= 0 else "active",
+                "percent": codex_5h_pct,
+                "label": "5-Hour Window",
+                "text": f"{codex_5h_pct}% Available (Limit Reached)" if codex_5h_pct <= 0 else f"{codex_5h_pct}% Available (Sliding Window)"
+            },
+            "weekly": {
+                "status": "cooldown" if codex_7d_pct < 100 else "active",
+                "percent": codex_7d_pct,
+                "label": "Weekly Limit",
+                "text": f"{codex_7d_pct}% Available (Weekly Rolling)"
+            }
         },
         "antigravityPro": {
             "account": "priyeshbhawsar15@gmail.com",
             "tier": "Google AI Pro",
-            "status": "active",
-            "percent": 6,
-            "quotaText": "6% Pro Quota Left",
-            "detail": "6% Pro Quota Remaining · Active Tier",
+            "status": "cooldown" if ag_pct < 100 else "active",
+            "percent": ag_pct,
+            "quotaText": f"{ag_pct}% Pro Quota Left",
+            "detail": f"{ag_pct}% Pro Quota Available · Active Tier",
             "models": [
-                { "name": "Gemini (Google AI Pro)", "tag": "Gemini Pro", "percent": 6, "status": "cooldown", "detail": "6% Pro Quota Available · Active Tier", "icon": "󰊭" }
+                {
+                    "name": "Gemini (Google AI Pro)",
+                    "tag": "Gemini Pro",
+                    "percent": ag_pct,
+                    "status": "cooldown" if ag_pct < 100 else "active",
+                    "detail": f"{ag_pct}% Pro Quota Available · Active Tier",
+                    "icon": "󰊭"
+                }
             ]
         },
         "totalActive": 3,
@@ -110,7 +140,7 @@ def fetch_data():
     cooldowns = []
     try:
         req_cd = urllib.request.Request(f"{endpoint}/api/resilience/model-cooldowns", headers=headers)
-        with urllib.request.urlopen(req_cd, timeout=6) as resp:
+        with urllib.request.urlopen(req_cd, timeout=5) as resp:
             cd_data = json.loads(resp.read().decode("utf-8"))
             cooldowns = cd_data.get("items", [])
     except Exception:
@@ -153,11 +183,7 @@ def fetch_data():
                 except Exception:
                     pass
             
-            percent = 89
-            status = "active"
-            quota_text = "89% Premium Quota Left"
-            detail_text = f"89% Requests Remaining · {exp_text}"
-            
+            detail_text = f"{copilot_pct}% Requests Remaining · {exp_text}"
             if copilot_cds:
                 max_cd = max([cd.get("remainingMs", 0) for cd in copilot_cds])
                 dur_text = format_duration(max_cd)
@@ -165,17 +191,18 @@ def fetch_data():
                 detail_text = f"{models_affected} on cooldown ({dur_text})"
                 
             if not is_active:
-                percent = 0
+                copilot_pct = 0
                 status = "disabled"
-                quota_text = "0% Quota · Disabled"
                 detail_text = "Connection Paused"
+            else:
+                status = "active"
             
             result["copilot"] = {
                 "name": "GitHub Copilot",
                 "plan": sku_name,
                 "status": status,
-                "percent": percent,
-                "quotaText": quota_text,
+                "percent": copilot_pct,
+                "quotaText": f"{copilot_pct}% Premium Quota Left",
                 "detail": detail_text
             }
 
@@ -189,13 +216,8 @@ def fetch_data():
             pool = c.get("codexAccountPool") or {}
             children = pool.get("children", [])
             
-            five_hour_percent = 0
-            five_hour_status = "exhausted"
-            five_hour_text = "0% Available (Limit Reached)"
-            
-            weekly_percent = 12
-            weekly_status = "cooldown"
-            weekly_text = "12% Available (Weekly Rolling)"
+            five_hour_text = f"{codex_5h_pct}% Available (Limit Reached)" if codex_5h_pct <= 0 else f"{codex_5h_pct}% Available (Sliding Window)"
+            five_hour_status = "exhausted" if codex_5h_pct <= 0 else "active"
             
             for child in children:
                 scope = child.get("key", {}).get("scope")
@@ -206,18 +228,19 @@ def fetch_data():
                         dur_text = parse_iso_duration(rl_until)
                         if dur_text:
                             five_hour_text = f"0% Available · {dur_text}"
+                            five_hour_status = "exhausted"
             
             result["codex"]["fiveHour"] = {
                 "status": five_hour_status,
-                "percent": five_hour_percent,
+                "percent": codex_5h_pct,
                 "label": "5-Hour Window",
                 "text": five_hour_text
             }
             result["codex"]["weekly"] = {
-                "status": weekly_status,
-                "percent": weekly_percent,
+                "status": "cooldown" if codex_7d_pct < 100 else "active",
+                "percent": codex_7d_pct,
                 "label": "Weekly Limit",
-                "text": weekly_text
+                "text": f"{codex_7d_pct}% Available (Weekly Rolling)"
             }
 
     # --- 3. GOOGLE ANTIGRAVITY (PRO ACCOUNT) LIVE TELEMETRY ---
@@ -235,33 +258,31 @@ def fetch_data():
         is_active = pro_conn.get("isActive", True)
         
         pro_cds = [cd for cd in cooldowns if cd.get("connectionId") == pro_id]
-        
-        pro_percent = 6
         pro_status = "cooldown" if is_active else "disabled"
-        pro_detail = "6% Pro Quota Available · Active Tier"
+        pro_detail = f"{ag_pct}% Pro Quota Available · Active Tier"
         
         if pro_cds:
             max_cd = max([cd.get("remainingMs", 0) for cd in pro_cds])
             dur_text = format_duration(max_cd)
-            pro_percent = 0
+            ag_pct = 0
             pro_status = "exhausted"
             pro_detail = f"Quota Exhausted · {dur_text}"
         elif not is_active:
-            pro_percent = 0
+            ag_pct = 0
             pro_detail = "0% Quota · Account Paused"
             
         result["antigravityPro"] = {
             "account": pro_email,
             "tier": pro_tier,
             "status": pro_status,
-            "percent": pro_percent,
-            "quotaText": f"{pro_percent}% Pro Quota Left",
+            "percent": ag_pct,
+            "quotaText": f"{ag_pct}% Pro Quota Left",
             "detail": pro_detail,
             "models": [
                 {
                     "name": "Gemini (Google AI Pro)",
                     "tag": "Gemini Pro",
-                    "percent": pro_percent,
+                    "percent": ag_pct,
                     "status": pro_status,
                     "detail": pro_detail,
                     "icon": "󰊭"
