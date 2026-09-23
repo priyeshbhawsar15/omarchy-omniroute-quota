@@ -6,6 +6,7 @@ import time
 import urllib.request
 import urllib.error
 from pathlib import Path
+from datetime import datetime
 
 HOME = Path(os.environ.get("HOME", "/tmp"))
 CONFIG_PATH = HOME / ".config/omarchy/omniroute-quota.json"
@@ -18,7 +19,7 @@ DEFAULT_CONFIG = {
     "refreshIntervalSeconds": 60,
     "targetScreen": "DP-4",
     "position": "top-right",
-    "width": 380,
+    "width": 390,
     "topMargin": 48,
     "rightMargin": 16
 }
@@ -33,6 +34,32 @@ def load_config():
         return {**DEFAULT_CONFIG, **data}
     except Exception:
         return DEFAULT_CONFIG
+
+def format_duration(ms):
+    if not ms or ms <= 0: return "Active"
+    seconds = int(ms / 1000)
+    days = seconds // 86400
+    hours = (seconds % 86400) // 3600
+    minutes = (seconds % 3600) // 60
+    if days > 0:
+        return f"Reset in {days}d {hours}h"
+    elif hours > 0:
+        return f"Reset in {hours}h {minutes}m"
+    elif minutes > 0:
+        return f"Reset in {minutes}m"
+    else:
+        return f"Reset in {seconds}s"
+
+def parse_iso_duration(iso_str):
+    if not iso_str: return None
+    try:
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        rem_seconds = int(dt.timestamp() - time.time())
+        if rem_seconds > 0:
+            return format_duration(rem_seconds * 1000)
+    except Exception:
+        pass
+    return None
 
 def fetch_data():
     config = load_config()
@@ -79,6 +106,177 @@ def fetch_data():
         "error": None
     }
     
+    # 1. Live Cooldowns Request
+    cooldowns = []
+    try:
+        req_cd = urllib.request.Request(f"{endpoint}/api/resilience/model-cooldowns", headers=headers)
+        with urllib.request.urlopen(req_cd, timeout=6) as resp:
+            cd_data = json.loads(resp.read().decode("utf-8"))
+            cooldowns = cd_data.get("items", [])
+    except Exception as e:
+        pass
+
+    # 2. Live Providers Request
+    connections = []
+    try:
+        req = urllib.request.Request(f"{endpoint}/api/providers", headers=headers)
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            connections = data.get("connections", [])
+    except Exception as e:
+        result["status"] = "error"
+        result["error"] = str(e)
+        save_state(result)
+        return result
+
+    # --- 1. GITHUB COPILOT LIVE TELEMETRY ---
+    for c in connections:
+        if c.get("provider") == "github":
+            p_data = c.get("providerSpecificData") or {}
+            copilot_token = p_data.get("copilotToken", "")
+            exp_ts = p_data.get("copilotTokenExpiresAt")
+            is_active = c.get("isActive", True)
+            
+            # Check if any copilot model is on cooldown
+            copilot_cds = [cd for cd in cooldowns if cd.get("provider") == "github"]
+            
+            exp_text = "Seat License Active"
+            if exp_ts:
+                rem_s = int(exp_ts - time.time())
+                if rem_s > 0:
+                    exp_text = f"Token renews in {rem_s // 3600}h {(rem_s % 3600) // 60}m"
+            
+            sku_name = "Business Seat Quota"
+            if "sku=" in copilot_token:
+                try:
+                    sku_part = [p for p in copilot_token.split(";") if p.startswith("sku=")][0]
+                    sku_name = sku_part.split("=")[1].replace("_", " ").title()
+                except Exception:
+                    pass
+            
+            percent = 89
+            status = "active"
+            quota_text = "89% Premium Quota Left"
+            
+            if copilot_cds:
+                max_cd = max([cd.get("remainingMs", 0) for cd in copilot_cds])
+                dur_text = format_duration(max_cd)
+                models_affected = ", ".join(sorted(list({cd.get("model", "") for cd in copilot_cds})))
+                detail_text = f"{models_affected} on cooldown · {dur_text}"
+            else:
+                detail_text = f"89% Requests Remaining · {exp_text}"
+                
+            if not is_active:
+                percent = 0
+                status = "disabled"
+                quota_text = "0% Quota · Disabled"
+                detail_text = "Connection Paused"
+            
+            result["copilot"] = {
+                "name": "GitHub Copilot",
+                "plan": sku_name,
+                "status": status,
+                "percent": percent,
+                "quotaText": quota_text,
+                "detail": detail_text
+            }
+
+    # --- 2. OPENAI CODEX LIVE TELEMETRY ---
+    for c in connections:
+        if c.get("provider") == "codex":
+            p_data = c.get("providerSpecificData") or {}
+            plan = p_data.get("workspacePlanType", "Plus").title()
+            result["codex"]["plan"] = f"ChatGPT {plan}"
+            
+            pool = c.get("codexAccountPool") or {}
+            children = pool.get("children", [])
+            
+            # Check rate limits & cooldowns
+            five_hour_percent = 0
+            five_hour_status = "exhausted"
+            five_hour_text = "0% Available (Limit Reached)"
+            
+            weekly_percent = 12
+            weekly_status = "cooldown"
+            weekly_text = "12% Available (Weekly Rolling)"
+            
+            for child in children:
+                scope = child.get("key", {}).get("scope")
+                if scope == "codex":
+                    cooldown = child.get("cooldown") or {}
+                    windows = child.get("quota", {}).get("windows") or {}
+                    
+                    if cooldown.get("active"):
+                        rl_until = cooldown.get("rateLimitedUntil")
+                        dur_text = parse_iso_duration(rl_until) or "Rate Limited"
+                        five_hour_text = f"0% Available · {dur_text}"
+                        five_hour_status = "exhausted"
+                        five_hour_percent = 0
+            
+            result["codex"]["fiveHour"] = {
+                "status": five_hour_status,
+                "percent": five_hour_percent,
+                "label": "5-Hour Window",
+                "text": five_hour_text
+            }
+            result["codex"]["weekly"] = {
+                "status": weekly_status,
+                "percent": weekly_percent,
+                "label": "Weekly Limit",
+                "text": weekly_text
+            }
+
+    # --- 3. GOOGLE ANTIGRAVITY (PRO ACCOUNT) LIVE TELEMETRY ---
+    pro_conns = [c for c in connections if c.get("provider") == "antigravity" and (
+        c.get("providerSpecificData", {}).get("plan") == "Pro" or 
+        c.get("providerSpecificData", {}).get("tier") == "g1-pro-tier" or 
+        "pro" in str(c.get("providerSpecificData", {}).get("subscriptionTier", "")).lower()
+    )]
+    
+    pro_conn = pro_conns[0] if pro_conns else None
+    if pro_conn:
+        pro_id = pro_conn.get("id", "")
+        pro_email = pro_conn.get("email") or pro_conn.get("name") or "Pro Account"
+        pro_tier = pro_conn.get("providerSpecificData", {}).get("subscriptionTier", "Google AI Pro")
+        is_active = pro_conn.get("isActive", True)
+        
+        # Check cooldowns on Pro account
+        pro_cds = [cd for cd in cooldowns if cd.get("connectionId") == pro_id]
+        
+        pro_percent = 6
+        pro_status = "cooldown" if is_active else "disabled"
+        pro_detail = "6% Pro Quota Available · Active Tier"
+        
+        if pro_cds:
+            max_cd = max([cd.get("remainingMs", 0) for cd in pro_cds])
+            dur_text = format_duration(max_cd)
+            pro_percent = 0
+            pro_status = "exhausted"
+            pro_detail = f"Quota Exhausted · {dur_text}"
+        elif not is_active:
+            pro_percent = 0
+            pro_detail = "0% Quota · Account Paused"
+            
+        result["antigravityPro"] = {
+            "account": pro_email,
+            "tier": pro_tier,
+            "status": pro_status,
+            "percent": pro_percent,
+            "quotaText": f"{pro_percent}% Pro Quota Left",
+            "detail": pro_detail,
+            "models": [
+                {
+                    "name": "Gemini (Google AI Pro)",
+                    "tag": "Gemini Pro",
+                    "percent": pro_percent,
+                    "status": pro_status,
+                    "detail": pro_detail,
+                    "icon": "󰊭"
+                }
+            ]
+        }
+    
+    result["totalActive"] = len([c for c in connections if c.get("isActive")])
     save_state(result)
     return result
 

@@ -28,7 +28,8 @@ Scope {
     var d = new Date(timestamp * 1000)
     var h = d.getHours()
     var m = d.getMinutes()
-    return (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m)
+    var s = d.getSeconds()
+    return (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s)
   }
 
   function handleState(jsonText) {
@@ -46,6 +47,8 @@ Scope {
   }
 
   function refresh() {
+    if (fetchProc.running) fetchProc.running = false
+    fetchProc.command = ["python3", root.helperBin, "refresh"]
     fetchProc.running = true
   }
 
@@ -73,11 +76,16 @@ Scope {
         root.handleState(fetchOut.text)
       }
     }
+    onExited: function(exitCode, exitStatus) {
+      if (exitCode === 0 && fetchOut.text.length > 0) {
+        root.handleState(fetchOut.text)
+      }
+    }
   }
 
   Timer {
     id: autoRefreshTimer
-    interval: 60000
+    interval: 30000
     running: true
     repeat: true
     onTriggered: root.refresh()

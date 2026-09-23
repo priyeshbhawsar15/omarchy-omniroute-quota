@@ -12,6 +12,9 @@ PanelWindow {
   property var pluginService: null
   property string targetScreenName: "DP-4"
 
+  readonly property color themeAccent: (Commons.Color.bar && Commons.Color.bar.active)
+    ? Commons.Color.bar.active : Commons.Color.accent
+
   screen: {
     const list = Quickshell.screens || []
     for (let i = 0; i < list.length; i++) {
@@ -44,9 +47,9 @@ PanelWindow {
     width: hudWindow.implicitWidth
     implicitHeight: mainCol.implicitHeight + Commons.Style.space(28)
     radius: Commons.Style.space(12)
-    color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.85)
+    color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.88)
     border.width: 1
-    border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.16)
+    border.color: Qt.rgba(hudWindow.themeAccent.r, hudWindow.themeAccent.g, hudWindow.themeAccent.b, 0.25)
     clip: true
 
     ColumnLayout {
@@ -64,7 +67,7 @@ PanelWindow {
 
         Text {
           text: "󰚩"
-          color: Commons.Color.accent
+          color: hudWindow.themeAccent
           font.family: Commons.Style.font.family
           font.pixelSize: Commons.Style.font.title
         }
@@ -97,12 +100,12 @@ PanelWindow {
           width: Commons.Style.space(28)
           height: Commons.Style.space(28)
           radius: Commons.Style.space(14)
-          color: refreshHover.hovered ? Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.18) : Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.08)
+          color: refreshHover.hovered ? Qt.rgba(hudWindow.themeAccent.r, hudWindow.themeAccent.g, hudWindow.themeAccent.b, 0.25) : Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.08)
 
           Text {
             anchors.centerIn: parent
             text: "󰑐"
-            color: Commons.Color.foreground
+            color: refreshHover.hovered ? hudWindow.themeAccent : Commons.Color.foreground
             font.family: Commons.Style.font.family
             font.pixelSize: Commons.Style.font.bodySmall
           }
@@ -152,7 +155,7 @@ PanelWindow {
 
               Text {
                 text: "󰊤"
-                color: Commons.Color.accent
+                color: hudWindow.themeAccent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.body
               }
@@ -168,8 +171,8 @@ PanelWindow {
               }
 
               Text {
-                text: "89% Premium Quota"
-                color: Commons.Color.accent
+                text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.quotaText || "89% Premium Quota Left") : "89% Premium Quota Left"
+                color: hudWindow.themeAccent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 font.weight: Font.Bold
@@ -179,15 +182,15 @@ PanelWindow {
             RowLayout {
               Layout.fillWidth: true
               Text {
-                text: "Business Seat Quota"
-                color: Commons.Color.accent
+                text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.plan || "Business Seat Quota") : "Business Seat Quota"
+                color: hudWindow.themeAccent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 elide: Text.ElideRight
                 Layout.fillWidth: true
               }
               Text {
-                text: "Seat License Active"
+                text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.detail || "Seat License Active") : "Seat License Active"
                 color: Commons.Color.muted
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
@@ -208,7 +211,7 @@ PanelWindow {
                 anchors.bottom: parent.bottom
                 width: parent.width * 0.89
                 radius: 2
-                color: Commons.Color.accent
+                color: hudWindow.themeAccent
               }
             }
           }
@@ -249,7 +252,7 @@ PanelWindow {
 
               Text {
                 text: "󰚩"
-                color: Commons.Color.accent
+                color: hudWindow.themeAccent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.body
               }
@@ -265,8 +268,8 @@ PanelWindow {
               }
 
               Text {
-                text: "ChatGPT Plus"
-                color: Commons.Color.accent
+                text: hudWindow.pluginService && hudWindow.pluginService.codexData ? String(hudWindow.pluginService.codexData.plan || "ChatGPT Plus") : "ChatGPT Plus"
+                color: hudWindow.themeAccent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 font.weight: Font.Bold
@@ -289,8 +292,8 @@ PanelWindow {
                   elide: Text.ElideRight
                 }
                 Text {
-                  text: "0% Left · Limited"
-                  color: Commons.Color.urgent
+                  text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour ? String(hudWindow.pluginService.codexData.fiveHour.text || "0% Available") : "0% Available"
+                  color: (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour && hudWindow.pluginService.codexData.fiveHour.status === "exhausted") ? Commons.Color.urgent : hudWindow.themeAccent
                   font.family: Commons.Style.font.family
                   font.pixelSize: Commons.Style.font.caption
                   font.weight: Font.Bold
@@ -308,9 +311,9 @@ PanelWindow {
                   anchors.left: parent.left
                   anchors.top: parent.top
                   anchors.bottom: parent.bottom
-                  width: 4
+                  width: Math.max(4, parent.width * (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour ? (Number(hudWindow.pluginService.codexData.fiveHour.percent) / 100) : 0))
                   radius: 2
-                  color: Commons.Color.urgent
+                  color: (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour && hudWindow.pluginService.codexData.fiveHour.status === "exhausted") ? Commons.Color.urgent : hudWindow.themeAccent
                 }
               }
             }
@@ -331,8 +334,8 @@ PanelWindow {
                   elide: Text.ElideRight
                 }
                 Text {
-                  text: "12% Left · Active"
-                  color: Commons.Color.accent
+                  text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly ? String(hudWindow.pluginService.codexData.weekly.text || "12% Available") : "12% Available"
+                  color: hudWindow.themeAccent
                   font.family: Commons.Style.font.family
                   font.pixelSize: Commons.Style.font.caption
                   font.weight: Font.Bold
@@ -352,7 +355,7 @@ PanelWindow {
                   anchors.bottom: parent.bottom
                   width: Math.max(4, parent.width * 0.12)
                   radius: 2
-                  color: Commons.Color.accent
+                  color: hudWindow.themeAccent
                 }
               }
             }
@@ -378,7 +381,7 @@ PanelWindow {
           Item { Layout.fillWidth: true }
           Text {
             text: "Google AI Pro"
-            color: Commons.Color.accent
+            color: hudWindow.themeAccent
             font.family: Commons.Style.font.family
             font.pixelSize: Commons.Style.font.caption
             font.weight: Font.Bold
@@ -391,7 +394,7 @@ PanelWindow {
           radius: Commons.Style.space(8)
           color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
           border.width: 1
-          border.color: Qt.rgba(Commons.Color.accent.r, Commons.Color.accent.g, Commons.Color.accent.b, 0.3)
+          border.color: Qt.rgba(hudWindow.themeAccent.r, hudWindow.themeAccent.g, hudWindow.themeAccent.b, 0.3)
 
           ColumnLayout {
             id: agCol
@@ -405,7 +408,7 @@ PanelWindow {
 
               Text {
                 text: "󰊭"
-                color: Commons.Color.accent
+                color: hudWindow.themeAccent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.body
               }
@@ -421,8 +424,8 @@ PanelWindow {
               }
 
               Text {
-                text: "6% Quota"
-                color: Commons.Color.accent
+                text: hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? String(hudWindow.pluginService.antigravityProData.quotaText || "6% Quota") : "6% Quota"
+                color: hudWindow.themeAccent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 font.weight: Font.Bold
@@ -433,14 +436,14 @@ PanelWindow {
               Layout.fillWidth: true
               Text {
                 text: "Google AI Pro Tier"
-                color: Commons.Color.accent
+                color: hudWindow.themeAccent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 elide: Text.ElideRight
                 Layout.fillWidth: true
               }
               Text {
-                text: "6% Pro Quota Available"
+                text: hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? String(hudWindow.pluginService.antigravityProData.detail || "6% Pro Quota Available") : "6% Pro Quota Available"
                 color: Commons.Color.muted
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
@@ -459,9 +462,9 @@ PanelWindow {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: Math.max(4, parent.width * 0.06)
+                width: Math.max(4, parent.width * (hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? (Number(hudWindow.pluginService.antigravityProData.percent) / 100) : 0.06))
                 radius: 2
-                color: Commons.Color.accent
+                color: hudWindow.themeAccent
               }
             }
           }
