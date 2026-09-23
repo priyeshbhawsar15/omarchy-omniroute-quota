@@ -155,7 +155,7 @@ PanelWindow {
 
               Text {
                 text: "󰊤"
-                color: hudWindow.themeAccent
+                color: (hudWindow.pluginService && hudWindow.pluginService.copilotData && hudWindow.pluginService.copilotData.status === "active") ? hudWindow.themeAccent : Commons.Color.urgent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.body
               }
@@ -171,8 +171,8 @@ PanelWindow {
               }
 
               Text {
-                text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.quotaText || "89% Premium Quota Left") : "89% Premium Quota Left"
-                color: hudWindow.themeAccent
+                text: hudWindow.pluginService && hudWindow.pluginService.copilotData ? String(hudWindow.pluginService.copilotData.quotaText || "") : ""
+                color: (hudWindow.pluginService && hudWindow.pluginService.copilotData && hudWindow.pluginService.copilotData.status === "active") ? hudWindow.themeAccent : Commons.Color.urgent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 font.weight: Font.Bold
@@ -209,9 +209,9 @@ PanelWindow {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: parent.width * 0.89
+                width: Math.max(4, parent.width * (hudWindow.pluginService && hudWindow.pluginService.copilotData ? (Number(hudWindow.pluginService.copilotData.percent) / 100) : 0))
                 radius: 2
-                color: hudWindow.themeAccent
+                color: (hudWindow.pluginService && hudWindow.pluginService.copilotData && hudWindow.pluginService.copilotData.status === "active") ? hudWindow.themeAccent : Commons.Color.urgent
               }
             }
           }
@@ -276,7 +276,7 @@ PanelWindow {
               }
             }
 
-            // 5-Hour Limit Bar (0%)
+            // 5-Hour Limit Bar
             ColumnLayout {
               Layout.fillWidth: true
               spacing: 2
@@ -292,7 +292,7 @@ PanelWindow {
                   elide: Text.ElideRight
                 }
                 Text {
-                  text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour ? String(hudWindow.pluginService.codexData.fiveHour.text || "0% Available") : "0% Available"
+                  text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour ? String(hudWindow.pluginService.codexData.fiveHour.text || "") : ""
                   color: (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.fiveHour && hudWindow.pluginService.codexData.fiveHour.status === "exhausted") ? Commons.Color.urgent : hudWindow.themeAccent
                   font.family: Commons.Style.font.family
                   font.pixelSize: Commons.Style.font.caption
@@ -318,7 +318,7 @@ PanelWindow {
               }
             }
 
-            // Weekly Limit Bar (12%)
+            // Weekly Limit Bar
             ColumnLayout {
               Layout.fillWidth: true
               spacing: 2
@@ -334,8 +334,8 @@ PanelWindow {
                   elide: Text.ElideRight
                 }
                 Text {
-                  text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly ? String(hudWindow.pluginService.codexData.weekly.text || "12% Available") : "12% Available"
-                  color: hudWindow.themeAccent
+                  text: hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly ? String(hudWindow.pluginService.codexData.weekly.text || "") : ""
+                  color: (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly && hudWindow.pluginService.codexData.weekly.status === "exhausted") ? Commons.Color.urgent : hudWindow.themeAccent
                   font.family: Commons.Style.font.family
                   font.pixelSize: Commons.Style.font.caption
                   font.weight: Font.Bold
@@ -353,9 +353,9 @@ PanelWindow {
                   anchors.left: parent.left
                   anchors.top: parent.top
                   anchors.bottom: parent.bottom
-                  width: Math.max(4, parent.width * 0.12)
+                  width: Math.max(4, parent.width * (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly ? (Number(hudWindow.pluginService.codexData.weekly.percent) / 100) : 0))
                   radius: 2
-                  color: hudWindow.themeAccent
+                  color: (hudWindow.pluginService && hudWindow.pluginService.codexData && hudWindow.pluginService.codexData.weekly && hudWindow.pluginService.codexData.weekly.status === "exhausted") ? Commons.Color.urgent : hudWindow.themeAccent
                 }
               }
             }
@@ -408,7 +408,7 @@ PanelWindow {
 
               Text {
                 text: "󰊭"
-                color: hudWindow.themeAccent
+                color: (hudWindow.pluginService && hudWindow.pluginService.antigravityProData && hudWindow.pluginService.antigravityProData.status === "exhausted") ? Commons.Color.urgent : hudWindow.themeAccent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.body
               }
@@ -424,8 +424,8 @@ PanelWindow {
               }
 
               Text {
-                text: hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? String(hudWindow.pluginService.antigravityProData.quotaText || "6% Quota") : "6% Quota"
-                color: hudWindow.themeAccent
+                text: hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? String(hudWindow.pluginService.antigravityProData.quotaText || "") : ""
+                color: (hudWindow.pluginService && hudWindow.pluginService.antigravityProData && hudWindow.pluginService.antigravityProData.status === "exhausted") ? Commons.Color.urgent : hudWindow.themeAccent
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
                 font.weight: Font.Bold
@@ -443,7 +443,7 @@ PanelWindow {
                 Layout.fillWidth: true
               }
               Text {
-                text: hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? String(hudWindow.pluginService.antigravityProData.detail || "6% Pro Quota Available") : "6% Pro Quota Available"
+                text: hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? String(hudWindow.pluginService.antigravityProData.detail || "") : ""
                 color: Commons.Color.muted
                 font.family: Commons.Style.font.family
                 font.pixelSize: Commons.Style.font.caption
@@ -462,9 +462,9 @@ PanelWindow {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: Math.max(4, parent.width * (hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? (Number(hudWindow.pluginService.antigravityProData.percent) / 100) : 0.06))
+                width: Math.max(4, parent.width * (hudWindow.pluginService && hudWindow.pluginService.antigravityProData ? (Number(hudWindow.pluginService.antigravityProData.percent) / 100) : 0))
                 radius: 2
-                color: hudWindow.themeAccent
+                color: (hudWindow.pluginService && hudWindow.pluginService.antigravityProData && hudWindow.pluginService.antigravityProData.status === "exhausted") ? Commons.Color.urgent : hudWindow.themeAccent
               }
             }
           }
