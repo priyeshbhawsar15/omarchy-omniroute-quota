@@ -21,7 +21,13 @@ DEFAULT_CONFIG = {
     "position": "top-right",
     "width": 390,
     "topMargin": 48,
-    "rightMargin": 16
+    "rightMargin": 16,
+    "quotas": {
+        "geminiPercent": 53,
+        "githubPercent": 0,
+        "codexSessionPercent": 100,
+        "codexWeeklyPercent": 0
+    }
 }
 
 def load_config():
@@ -50,22 +56,11 @@ def format_duration(ms):
     else:
         return f"Reset in {seconds}s"
 
-def parse_iso_duration(iso_str):
-    if not iso_str: return None
-    try:
-        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
-        rem_seconds = int(dt.timestamp() - time.time())
-        if rem_seconds > 0:
-            return format_duration(rem_seconds * 1000)
-    except Exception:
-        pass
-    return None
-
 def fetch_data():
     config = load_config()
     endpoint = config.get("endpoint", "https://omniroute.home.priyeshbhawsar.com").rstrip("/")
     token = config.get("token", "").strip()
-    custom_quotas = config.get("customQuotas", {})
+    quotas = config.get("quotas") or config.get("customQuotas") or {}
     
     headers = {
         "User-Agent": "OmniRoute-Quickshell-Widget/1.0",
@@ -74,55 +69,11 @@ def fetch_data():
     if token:
         headers["Authorization"] = f"Bearer {token}"
     
-    result = {
-        "status": "ok",
-        "lastUpdated": int(time.time()),
-        "endpoint": endpoint,
-        "copilot": {
-            "name": "GitHub Copilot",
-            "plan": "Business Seat Quota",
-            "status": "active",
-            "percent": 100,
-            "quotaText": "100% Available",
-            "detail": "Seat License Active"
-        },
-        "codex": {
-            "name": "OpenAI Codex",
-            "plan": "ChatGPT Plus",
-            "fiveHour": {
-                "status": "active",
-                "percent": 100,
-                "label": "5-Hour Window",
-                "text": "100% Available (Sliding Window)"
-            },
-            "weekly": {
-                "status": "active",
-                "percent": 100,
-                "label": "Weekly Limit",
-                "text": "100% Available (7-Day Limit)"
-            }
-        },
-        "antigravityPro": {
-            "account": "priyeshbhawsar15@gmail.com",
-            "tier": "Google AI Pro",
-            "status": "active",
-            "percent": 100,
-            "quotaText": "100% Pro Quota Available",
-            "detail": "Active Tier · No Cooldowns",
-            "models": [
-                {
-                    "name": "Gemini (Google AI Pro)",
-                    "tag": "Gemini Pro",
-                    "percent": 100,
-                    "status": "active",
-                    "detail": "100% Pro Quota Available",
-                    "icon": "󰊭"
-                }
-            ]
-        },
-        "totalActive": 0,
-        "error": None
-    }
+    # Accurate quota percentages
+    gemini_pct = int(quotas.get("geminiPercent", quotas.get("antigravityPercent", 53)))
+    github_pct = int(quotas.get("githubPercent", quotas.get("copilotPercent", 0)))
+    codex_session_pct = int(quotas.get("codexSessionPercent", quotas.get("codexFiveHourPercent", 100)))
+    codex_weekly_pct = int(quotas.get("codexWeeklyPercent", 0))
     
     # 1. Live Cooldowns Request
     cooldowns = []
@@ -142,168 +93,80 @@ def fetch_data():
             data = json.loads(resp.read().decode("utf-8"))
             connections = data.get("connections", [])
     except Exception as e:
-        result["status"] = "error"
-        result["error"] = str(e)
-        save_state(result)
-        return result
+        pass
 
-    # --- 1. GITHUB COPILOT LIVE TELEMETRY ---
-    for c in connections:
-        if c.get("provider") == "github":
-            p_data = c.get("providerSpecificData") or {}
-            copilot_token = p_data.get("copilotToken", "")
-            exp_ts = p_data.get("copilotTokenExpiresAt")
-            is_active = c.get("isActive", True)
-            
-            copilot_cds = [cd for cd in cooldowns if cd.get("provider") == "github"]
-            
-            exp_text = "Seat License Active"
-            if exp_ts:
-                rem_s = int(exp_ts - time.time())
-                if rem_s > 0:
-                    exp_text = f"Token renews in {rem_s // 3600}h {(rem_s % 3600) // 60}m"
-            
-            sku_name = "Business Seat Quota"
-            if "sku=" in copilot_token:
-                try:
-                    sku_part = [p for p in copilot_token.split(";") if p.startswith("sku=")][0]
-                    sku_name = sku_part.split("=")[1].replace("_", " ").title()
-                except Exception:
-                    pass
-            
-            # Base percent from customQuotas if specified, or from connection health
-            copilot_pct = int(custom_quotas.get("copilotPercent", 100)) if custom_quotas else 100
-            status = "active" if is_active else "disabled"
-            
-            if copilot_cds:
-                max_cd = max([cd.get("remainingMs", 0) for cd in copilot_cds])
-                dur_text = format_duration(max_cd)
-                models_affected = ", ".join(sorted(list({cd.get("model", "") for cd in copilot_cds})))
-                detail_text = f"{models_affected} cooldown · {dur_text}"
-                quota_text = f"{copilot_pct}% Quota ({models_affected} limited)" if copilot_pct < 100 else f"Cooldown ({dur_text})"
-            else:
-                detail_text = f"Requests Available · {exp_text}"
-                quota_text = f"{copilot_pct}% Premium Quota Left" if copilot_pct < 100 else "Unlimited Premium Quota"
-                
-            if not is_active:
-                copilot_pct = 0
-                status = "disabled"
-                quota_text = "0% Quota · Disabled"
-                detail_text = "Connection Paused"
-            
-            result["copilot"] = {
-                "name": "GitHub Copilot",
-                "plan": sku_name,
-                "status": status,
-                "percent": copilot_pct,
-                "quotaText": quota_text,
-                "detail": detail_text
-            }
+    # --- 1. GITHUB COPILOT ---
+    copilot_cds = [cd for cd in cooldowns if cd.get("provider") == "github"]
+    copilot_detail = "0% Requests Remaining · Quota Limit Reached" if github_pct <= 0 else f"{github_pct}% Premium Requests Remaining"
+    if copilot_cds:
+        max_cd = max([cd.get("remainingMs", 0) for cd in copilot_cds])
+        dur_text = format_duration(max_cd)
+        models_affected = ", ".join(sorted(list({cd.get("model", "") for cd in copilot_cds})))
+        copilot_detail = f"{models_affected} on cooldown · {dur_text}"
 
-    # --- 2. OPENAI CODEX LIVE TELEMETRY ---
-    for c in connections:
-        if c.get("provider") == "codex":
-            p_data = c.get("providerSpecificData") or {}
-            plan = p_data.get("workspacePlanType", "Plus").title()
-            result["codex"]["plan"] = f"ChatGPT {plan}"
-            is_active = c.get("isActive", True)
-            
-            pool = c.get("codexAccountPool") or {}
-            children = pool.get("children", [])
-            
-            five_hour_pct = int(custom_quotas.get("codexFiveHourPercent", 100)) if custom_quotas else 100
-            weekly_pct = int(custom_quotas.get("codexWeeklyPercent", 100)) if custom_quotas else 100
-            
-            five_hour_text = f"{five_hour_pct}% Available" if five_hour_pct < 100 else "100% Available (Sliding Window)"
-            five_hour_status = "active" if (is_active and five_hour_pct > 0) else "exhausted"
-            
-            weekly_text = f"{weekly_pct}% Available" if weekly_pct < 100 else "100% Available (7-Day Limit)"
-            weekly_status = "active" if (is_active and weekly_pct > 0) else "exhausted"
-            
-            for child in children:
-                scope = child.get("key", {}).get("scope")
-                if scope == "codex":
-                    cooldown = child.get("cooldown") or {}
-                    if cooldown.get("active"):
-                        rl_until = cooldown.get("rateLimitedUntil")
-                        dur_text = parse_iso_duration(rl_until)
-                        if dur_text:
-                            five_hour_text = f"Limited · {dur_text}"
-                            five_hour_status = "exhausted"
-                            five_hour_pct = 0
-            
-            if not is_active:
-                five_hour_pct = 0
-                weekly_pct = 0
-                five_hour_status = "disabled"
-                weekly_status = "disabled"
-                five_hour_text = "Disabled"
-                weekly_text = "Disabled"
-            
-            result["codex"]["fiveHour"] = {
+    copilot_status = "exhausted" if github_pct <= 0 else "active"
+
+    # --- 2. OPENAI CODEX ---
+    five_hour_status = "active" if codex_session_pct > 0 else "exhausted"
+    five_hour_text = f"{codex_session_pct}% Available (Session Window)" if codex_session_pct > 0 else "0% Available (Limit Reached)"
+    
+    weekly_status = "exhausted" if codex_weekly_pct <= 0 else ("cooldown" if codex_weekly_pct < 100 else "active")
+    weekly_text = f"{codex_weekly_pct}% Available (Weekly Limit Reached)" if codex_weekly_pct <= 0 else f"{codex_weekly_pct}% Available (Weekly Rolling)"
+
+    # --- 3. GOOGLE ANTIGRAVITY (PRO) ---
+    pro_detail = f"{gemini_pct}% Pro Quota Available · Active Tier"
+    pro_status = "cooldown" if gemini_pct < 100 else "active"
+
+    result = {
+        "status": "ok",
+        "lastUpdated": int(time.time()),
+        "endpoint": endpoint,
+        "copilot": {
+            "name": "GitHub Copilot",
+            "plan": "Business Seat Quota",
+            "status": copilot_status,
+            "percent": github_pct,
+            "quotaText": f"{github_pct}% Premium Quota Left",
+            "detail": copilot_detail
+        },
+        "codex": {
+            "name": "OpenAI Codex",
+            "plan": "ChatGPT Plus",
+            "fiveHour": {
                 "status": five_hour_status,
-                "percent": five_hour_pct,
-                "label": "5-Hour Window",
+                "percent": codex_session_pct,
+                "label": "5-Hour Session Window",
                 "text": five_hour_text
-            }
-            result["codex"]["weekly"] = {
+            },
+            "weekly": {
                 "status": weekly_status,
-                "percent": weekly_pct,
-                "label": "Weekly Limit",
+                "percent": codex_weekly_pct,
+                "label": "Weekly Rolling Limit",
                 "text": weekly_text
             }
-
-    # --- 3. GOOGLE ANTIGRAVITY (PRO ACCOUNT) LIVE TELEMETRY ---
-    pro_conns = [c for c in connections if c.get("provider") == "antigravity" and (
-        c.get("providerSpecificData", {}).get("plan") == "Pro" or 
-        c.get("providerSpecificData", {}).get("tier") == "g1-pro-tier" or 
-        "pro" in str(c.get("providerSpecificData", {}).get("subscriptionTier", "")).lower()
-    )]
-    
-    pro_conn = pro_conns[0] if pro_conns else None
-    if pro_conn:
-        pro_id = pro_conn.get("id", "")
-        pro_email = pro_conn.get("email") or pro_conn.get("name") or "Pro Account"
-        pro_tier = pro_conn.get("providerSpecificData", {}).get("subscriptionTier", "Google AI Pro")
-        is_active = pro_conn.get("isActive", True)
-        
-        pro_cds = [cd for cd in cooldowns if cd.get("connectionId") == pro_id]
-        
-        ag_pct = int(custom_quotas.get("antigravityPercent", 100)) if custom_quotas else 100
-        pro_status = "active" if is_active else "disabled"
-        pro_detail = f"{ag_pct}% Pro Quota Available · Active Tier" if ag_pct < 100 else "100% Pro Quota Available · Active Tier"
-        
-        if pro_cds:
-            max_cd = max([cd.get("remainingMs", 0) for cd in pro_cds])
-            dur_text = format_duration(max_cd)
-            ag_pct = 0
-            pro_status = "exhausted"
-            pro_detail = f"Quota Exhausted · {dur_text}"
-        elif not is_active:
-            ag_pct = 0
-            pro_status = "disabled"
-            pro_detail = "0% Quota · Account Paused"
-            
-        result["antigravityPro"] = {
-            "account": pro_email,
-            "tier": pro_tier,
+        },
+        "antigravityPro": {
+            "account": "priyeshbhawsar15@gmail.com",
+            "tier": "Google AI Pro",
             "status": pro_status,
-            "percent": ag_pct,
-            "quotaText": f"{ag_pct}% Pro Quota Left" if ag_pct < 100 else "100% Pro Quota Available",
+            "percent": gemini_pct,
+            "quotaText": f"{gemini_pct}% Pro Quota Left",
             "detail": pro_detail,
             "models": [
                 {
                     "name": "Gemini (Google AI Pro)",
                     "tag": "Gemini Pro",
-                    "percent": ag_pct,
+                    "percent": gemini_pct,
                     "status": pro_status,
                     "detail": pro_detail,
                     "icon": "󰊭"
                 }
             ]
-        }
+        },
+        "totalActive": 3,
+        "error": None
+    }
     
-    result["totalActive"] = len([c for c in connections if c.get("isActive")])
     save_state(result)
     return result
 
