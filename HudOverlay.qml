@@ -24,12 +24,12 @@ PanelWindow {
   }
 
   anchors {
-    bottom: true
+    top: true
     right: true
   }
 
   margins {
-    bottom: Commons.Style.space(24)
+    top: Commons.Style.space(48)
     right: Commons.Style.space(16)
   }
 
