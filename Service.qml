@@ -46,9 +46,9 @@ Scope {
     }
   }
 
-  function refresh() {
-    if (fetchProc.running) fetchProc.running = false
-    fetchProc.command = ["python3", root.helperBin, "refresh"]
+  function refresh(forceLive) {
+    if (fetchProc.running) return
+    fetchProc.command = ["python3", root.helperBin, forceLive === true ? "refresh" : "fetch"]
     fetchProc.running = true
   }
 
@@ -88,14 +88,14 @@ Scope {
     interval: 30000
     running: true
     repeat: true
-    onTriggered: root.refresh()
+    onTriggered: root.refresh(false)
   }
 
   Component.onCompleted: {
     if (stateWatcher.loaded) {
       root.handleState(stateWatcher.text())
     }
-    root.refresh()
+    root.refresh(true)
   }
 
   HudOverlay {
@@ -107,7 +107,7 @@ Scope {
   IpcHandler {
     target: "priyesh.omniroute-quota"
 
-    function refresh(): void { root.refresh() }
+    function refresh(): void { root.refresh(true) }
     function toggle(): void { root.toggle() }
     function show(): void { root.hudVisible = true }
     function hide(): void { root.hudVisible = false }

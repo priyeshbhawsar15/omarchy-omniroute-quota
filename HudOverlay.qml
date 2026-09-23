@@ -114,7 +114,7 @@ PanelWindow {
           TapHandler {
             onTapped: {
               if (hudWindow.pluginService && typeof hudWindow.pluginService.refresh === "function") {
-                hudWindow.pluginService.refresh()
+                hudWindow.pluginService.refresh(true)
               }
             }
           }

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "priyesh.omniroute-quota",
   "name": "OmniRoute Quota",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Priyesh Bhawsar",
   "license": "MIT",
   "description": "Live OmniRoute provider quota & usage HUD widget pinned to monitor DP-4.",
