@@ -15,6 +15,7 @@ Scope {
     ? (manifest.__sourceDir + "/bin/omniroute-quota")
     : (homeDir + "/.config/omarchy/plugins/priyesh.omniroute-quota/bin/omniroute-quota")
   readonly property string stateFilePath: homeDir + "/.local/state/omarchy/omniroute-quota/state.json"
+  readonly property string settingsFilePath: homeDir + "/.local/state/omarchy/omniroute-quota/settings.json"
 
   property var copilotData: ({})
   property var codexData: ({})
@@ -22,6 +23,36 @@ Scope {
   property int totalActive: 3
   property string lastUpdatedText: ""
   property bool hudVisible: true
+  property bool isPinned: false
+  property bool autohideEnabled: false
+
+  function loadSettings(jsonText) {
+    if (!jsonText || jsonText.length === 0) return
+    try {
+      var s = JSON.parse(jsonText)
+      if (s.isPinned !== undefined) root.isPinned = (s.isPinned === true)
+      if (s.autohideEnabled !== undefined) root.autohideEnabled = (s.autohideEnabled === true)
+    } catch (e) {}
+  }
+
+  function saveSettings() {
+    saveSettingsProc.command = [
+      "python3", "-c",
+      "import json, os, sys; p = sys.argv[1]; os.makedirs(os.path.dirname(p), exist_ok=True); open(p, 'w').write(json.dumps({'isPinned': sys.argv[2] == '1', 'autohideEnabled': sys.argv[3] == '1'}))",
+      root.settingsFilePath, root.isPinned ? "1" : "0", root.autohideEnabled ? "1" : "0"
+    ]
+    saveSettingsProc.running = true
+  }
+
+  function togglePin() {
+    root.isPinned = !root.isPinned
+    root.saveSettings()
+  }
+
+  function toggleAutohide() {
+    root.autohideEnabled = !root.autohideEnabled
+    root.saveSettings()
+  }
 
   function formatTime(timestamp) {
     if (!timestamp) return ""
@@ -66,6 +97,19 @@ Scope {
     }
   }
 
+  FileView {
+    id: settingsWatcher
+    path: root.settingsFilePath
+    printErrors: false
+    watchChanges: true
+    onLoaded: root.loadSettings(settingsWatcher.text())
+    onTextChanged: root.loadSettings(settingsWatcher.text())
+  }
+
+  Process {
+    id: saveSettingsProc
+  }
+
   Process {
     id: fetchProc
     command: ["python3", root.helperBin, "refresh"]
@@ -92,6 +136,9 @@ Scope {
   }
 
   Component.onCompleted: {
+    if (settingsWatcher.loaded) {
+      root.loadSettings(settingsWatcher.text())
+    }
     if (stateWatcher.loaded) {
       root.handleState(stateWatcher.text())
     }
@@ -111,5 +158,7 @@ Scope {
     function toggle(): void { root.toggle() }
     function show(): void { root.hudVisible = true }
     function hide(): void { root.hudVisible = false }
+    function togglePin(): void { root.togglePin() }
+    function toggleAutohide(): void { root.toggleAutohide() }
   }
 }

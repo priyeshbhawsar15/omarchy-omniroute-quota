@@ -15,6 +15,11 @@ PanelWindow {
   readonly property color themeAccent: (Commons.Color.bar && Commons.Color.bar.active)
     ? Commons.Color.bar.active : Commons.Color.accent
 
+  readonly property bool isPinned: pluginService ? pluginService.isPinned : false
+  readonly property bool autohideEnabled: pluginService ? pluginService.autohideEnabled : false
+  property bool isHovered: false
+  readonly property bool isRevealed: !autohideEnabled || isHovered
+
   screen: {
     const list = Quickshell.screens || []
     for (let i = 0; i < list.length; i++) {
@@ -38,19 +43,76 @@ PanelWindow {
   color: "transparent"
 
   WlrLayershell.namespace: "omniroute-quota-hud"
-  WlrLayershell.layer: WlrLayer.Bottom
+  WlrLayershell.layer: isPinned ? WlrLayer.Overlay : WlrLayer.Bottom
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
   exclusionMode: ExclusionMode.Ignore
+
+  mask: Region {
+    x: hudWindow.isRevealed ? 0 : Math.max(0, hudWindow.width - 14)
+    y: 0
+    width: hudWindow.isRevealed ? hudWindow.width : 14
+    height: hudWindow.height
+  }
+
+  Timer {
+    id: autoHideTimer
+    interval: 700
+    onTriggered: {
+      if (hudWindow.autohideEnabled && !cardHoverArea.containsMouse && !edgeHoverArea.containsMouse) {
+        hudWindow.isHovered = false
+      }
+    }
+  }
+
+  function requestShow() {
+    autoHideTimer.stop()
+    hudWindow.isHovered = true
+  }
+
+  function requestHide() {
+    if (hudWindow.autohideEnabled) {
+      autoHideTimer.restart()
+    }
+  }
+
+  // Edge Trigger Sensor
+  MouseArea {
+    id: edgeHoverArea
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 14
+    hoverEnabled: true
+    acceptedButtons: Qt.NoButton
+    z: 100
+    onEntered: hudWindow.requestShow()
+    onExited: hudWindow.requestHide()
+  }
 
   Rectangle {
     id: hudFrame
     width: hudWindow.implicitWidth
     implicitHeight: mainCol.implicitHeight + Commons.Style.space(28)
+    anchors.top: parent.top
+    x: hudWindow.isRevealed ? 0 : (parent.width + 20)
     radius: Commons.Style.space(12)
     color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.88)
     border.width: 1
     border.color: Qt.rgba(hudWindow.themeAccent.r, hudWindow.themeAccent.g, hudWindow.themeAccent.b, 0.25)
     clip: true
+
+    Behavior on x {
+      NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
+    }
+
+    MouseArea {
+      id: cardHoverArea
+      anchors.fill: parent
+      hoverEnabled: true
+      acceptedButtons: Qt.NoButton
+      onEntered: hudWindow.requestShow()
+      onExited: hudWindow.requestHide()
+    }
 
     ColumnLayout {
       id: mainCol
@@ -116,6 +178,68 @@ PanelWindow {
               if (hudWindow.pluginService && typeof hudWindow.pluginService.refresh === "function") {
                 hudWindow.pluginService.refresh(true)
               }
+            }
+          }
+        }
+
+        // AUTO-HIDE TOGGLE BUTTON
+        Rectangle {
+          width: 28
+          height: 28
+          radius: 6
+          color: hudWindow.autohideEnabled
+            ? Qt.rgba(hudWindow.themeAccent.r, hudWindow.themeAccent.g, hudWindow.themeAccent.b, 0.25)
+            : (autohideHover.containsMouse ? Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.12) : "transparent")
+          border.width: 1
+          border.color: hudWindow.autohideEnabled
+            ? hudWindow.themeAccent : Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.18)
+
+          Text {
+            anchors.centerIn: parent
+            text: hudWindow.autohideEnabled ? "󰘖" : "󱊒"
+            color: hudWindow.autohideEnabled ? hudWindow.themeAccent : Commons.Color.foreground
+            font.family: Commons.Style.font.family
+            font.pixelSize: 14
+          }
+
+          MouseArea {
+            id: autohideHover
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              if (hudWindow.pluginService) hudWindow.pluginService.toggleAutohide()
+            }
+          }
+        }
+
+        // PIN TOGGLE BUTTON
+        Rectangle {
+          width: 28
+          height: 28
+          radius: 6
+          color: hudWindow.isPinned
+            ? Qt.rgba(hudWindow.themeAccent.r, hudWindow.themeAccent.g, hudWindow.themeAccent.b, 0.25)
+            : (pinHover.containsMouse ? Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.12) : "transparent")
+          border.width: 1
+          border.color: hudWindow.isPinned
+            ? hudWindow.themeAccent : Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.18)
+
+          Text {
+            anchors.centerIn: parent
+            text: hudWindow.isPinned ? "󰐃" : "󰤱"
+            color: hudWindow.isPinned ? hudWindow.themeAccent : Commons.Color.foreground
+            font.family: Commons.Style.font.family
+            font.pixelSize: 14
+          }
+
+          MouseArea {
+            id: pinHover
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              if (hudWindow.pluginService) hudWindow.pluginService.togglePin()
             }
           }
         }
@@ -480,6 +604,22 @@ PanelWindow {
         font.family: Commons.Style.font.family
         font.pixelSize: Commons.Style.font.caption
       }
+    }
+  }
+
+  // Edge Grab Handle Pill (when collapsed in auto-hide mode)
+  Rectangle {
+    anchors.right: parent.right
+    anchors.verticalCenter: hudFrame.verticalCenter
+    width: 6
+    height: 80
+    radius: 3
+    color: hudWindow.themeAccent
+    opacity: hudWindow.isRevealed ? 0 : 0.85
+    z: 90
+
+    Behavior on opacity {
+      NumberAnimation { duration: 200 }
     }
   }
 }
