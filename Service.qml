@@ -145,10 +145,20 @@ Scope {
     root.refresh(true)
   }
 
-  HudOverlay {
-    id: hudWindow
-    pluginService: root
-    visible: root.hudVisible
+  // Own windows by screen identity, so hotplug replaces closed surfaces.
+  Variants {
+    model: {
+      const screens = Quickshell.screens || []
+      const target = screens.find(screen => screen.name === "DP-4")
+      const selected = target || screens[1] || screens[0]
+      return selected ? [selected] : []
+    }
+    HudOverlay {
+      required property var modelData
+      screen: modelData
+      pluginService: root
+      visible: root.hudVisible
+    }
   }
 
   IpcHandler {
