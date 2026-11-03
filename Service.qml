@@ -19,8 +19,9 @@ Scope {
 
   property var copilotData: ({})
   property var codexData: ({})
+  property var claudeData: ({})
   property var antigravityProData: ({})
-  property int totalActive: 3
+  property int totalActive: 4
   property string lastUpdatedText: ""
   property bool hudVisible: true
   property bool isPinned: false
@@ -69,6 +70,7 @@ Scope {
       var data = JSON.parse(jsonText)
       if (data.copilot) root.copilotData = data.copilot
       if (data.codex) root.codexData = data.codex
+      if (data.claude) root.claudeData = data.claude
       if (data.antigravityPro) root.antigravityProData = data.antigravityPro
       if (data.totalActive !== undefined) root.totalActive = data.totalActive
       if (data.lastUpdated) root.lastUpdatedText = formatTime(data.lastUpdated)

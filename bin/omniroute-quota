@@ -31,6 +31,9 @@ DEFAULT_CONFIG = {
     "rightMargin": 16,
 }
 
+CLAUDE_SESSION_LABEL = "5-Hour Session Limit"
+CLAUDE_WEEKLY_LABEL = "Weekly Limit"
+
 
 def load_config():
     if not CONFIG_PATH.is_file():
@@ -172,6 +175,21 @@ def unavailable_codex(message="Provider quota unavailable"):
     }
 
 
+def unavailable_claude(message="Provider quota unavailable"):
+    window = {
+        "status": "unavailable",
+        "percent": 0,
+        "text": "Data unavailable",
+        "resetIn": message,
+    }
+    return {
+        "name": "Claude Code",
+        "plan": "Unknown",
+        "session": {**window, "label": CLAUDE_SESSION_LABEL},
+        "weekly": {**window, "label": CLAUDE_WEEKLY_LABEL},
+    }
+
+
 def unavailable_antigravity(message="Provider quota unavailable"):
     return {
         "account": "Active account",
@@ -217,7 +235,7 @@ def build_copilot(connection, cache):
     }
 
 
-def build_codex_window(quota, label):
+def build_limit_window(quota, label):
     percent = quota_percent(quota)
     available = isinstance(quota, dict)
     reset_at = quota.get("resetAt") if available else None
@@ -247,8 +265,45 @@ def build_codex(connection, cache):
     return {
         "name": "OpenAI Codex",
         "plan": f"ChatGPT {str(cache.get('plan') or 'Unknown').title()}",
-        "fiveHour": build_codex_window(quotas.get("session"), "5-Hour Session Window"),
-        "weekly": build_codex_window(quotas.get("weekly"), "Weekly Rolling Limit"),
+        "fiveHour": build_limit_window(quotas.get("session"), "5-Hour Session Window"),
+        "weekly": build_limit_window(quotas.get("weekly"), "Weekly Rolling Limit"),
+    }
+
+
+def claude_window(quotas, kind, key):
+    """Select by OmniRoute's window kind; weekly_all excludes model-scoped windows."""
+    for quota in quotas.values():
+        if isinstance(quota, dict) and (quota.get("claudeQuota") or {}).get("kind") == kind:
+            return quota
+    return quotas.get(key)
+
+
+def claude_plan(connection):
+    organization = (connection.get("providerSpecificData") or {}).get("organizationType")
+    if not organization:
+        return "Unknown"
+    return str(organization).replace("_", " ").title()
+
+
+def build_claude(connection, cache):
+    if not connection:
+        data = unavailable_claude("No active Claude connection")
+        data["session"]["status"] = "disabled"
+        data["weekly"]["status"] = "disabled"
+        return data
+    plan = claude_plan(connection)
+    if not isinstance(cache, dict):
+        return {**unavailable_claude(), "plan": plan}
+    quotas = cache.get("quotas") or {}
+    return {
+        "name": "Claude Code",
+        "plan": plan,
+        "session": build_limit_window(
+            claude_window(quotas, "session", "session (5h)"), CLAUDE_SESSION_LABEL
+        ),
+        "weekly": build_limit_window(
+            claude_window(quotas, "weekly_all", "weekly (7d)"), CLAUDE_WEEKLY_LABEL
+        ),
     }
 
 
@@ -320,6 +375,7 @@ def fetch_data(live_refresh=False):
         "liveRefresh": bool(live_refresh),
         "copilot": unavailable_copilot(),
         "codex": unavailable_codex(),
+        "claude": unavailable_claude(),
         "antigravityPro": unavailable_antigravity(),
         "totalActive": 0,
         "error": None,
@@ -337,17 +393,19 @@ def fetch_data(live_refresh=False):
         caches = limits_payload.get("caches") or {}
         github = active_connection(connections, "github")
         codex = active_connection(connections, "codex")
+        claude = active_connection(connections, "claude")
         antigravity = active_connection(connections, "antigravity")
         result["copilot"] = build_copilot(github, caches.get(github.get("id")) if github else None)
         result["codex"] = build_codex(codex, caches.get(codex.get("id")) if codex else None)
+        result["claude"] = build_claude(claude, caches.get(claude.get("id")) if claude else None)
         result["antigravityPro"] = build_antigravity(
             antigravity, caches.get(antigravity.get("id")) if antigravity else None
         )
-        result["totalActive"] = sum(bool(item) for item in (github, codex, antigravity))
+        result["totalActive"] = sum(bool(item) for item in (github, codex, claude, antigravity))
         result["providerLimitsFetchedAt"] = max(
             (
                 str(caches.get(item.get("id"), {}).get("fetchedAt") or "")
-                for item in (github, codex, antigravity)
+                for item in (github, codex, claude, antigravity)
                 if item
             ),
             default="",

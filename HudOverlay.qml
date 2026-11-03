@@ -79,6 +79,54 @@ PanelWindow {
     }
   }
 
+  component LimitWindow: ColumnLayout {
+    id: limitWindow
+
+    property var windowData: null
+    property color accent
+
+    readonly property color statusColor: windowData && windowData.status === "exhausted" ? Commons.Color.urgent : accent
+
+    Layout.fillWidth: true
+    spacing: 2
+
+    RowLayout {
+      Layout.fillWidth: true
+      Text {
+        text: limitWindow.windowData ? String(limitWindow.windowData.label || "") : ""
+        color: Commons.Color.muted
+        font.family: Commons.Style.font.family
+        font.pixelSize: Commons.Style.font.caption
+        Layout.fillWidth: true
+        elide: Text.ElideRight
+      }
+      Text {
+        text: limitWindow.windowData ? String(limitWindow.windowData.text || "") : ""
+        color: limitWindow.statusColor
+        font.family: Commons.Style.font.family
+        font.pixelSize: Commons.Style.font.caption
+        font.weight: Font.Bold
+      }
+    }
+
+    Rectangle {
+      Layout.fillWidth: true
+      height: 4
+      radius: 2
+      color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.10)
+      clip: true
+
+      Rectangle {
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: Math.max(4, parent.width * (limitWindow.windowData ? (Number(limitWindow.windowData.percent) / 100) : 0))
+        radius: 2
+        color: limitWindow.statusColor
+      }
+    }
+  }
+
   // Edge Trigger Sensor
   MouseArea {
     id: edgeHoverArea
@@ -491,7 +539,78 @@ PanelWindow {
         }
       }
 
-      // SECTION 3: GOOGLE ANTIGRAVITY (PRO ACCOUNT ONLY)
+      // SECTION 3: CLAUDE CODE LIMITS (5h session & weekly)
+      ColumnLayout {
+        Layout.fillWidth: true
+        spacing: Commons.Style.space(6)
+
+        Text {
+          text: "CLAUDE CODE LIMITS"
+          color: Commons.Color.muted
+          font.family: Commons.Style.font.family
+          font.pixelSize: Commons.Style.font.caption
+          font.weight: Font.Bold
+          font.letterSpacing: 1
+        }
+
+        Rectangle {
+          Layout.fillWidth: true
+          implicitHeight: claudeCol.implicitHeight + Commons.Style.space(20)
+          radius: Commons.Style.space(8)
+          color: Qt.rgba(Commons.Color.background.r, Commons.Color.background.g, Commons.Color.background.b, 0.70)
+          border.width: 1
+          border.color: Qt.rgba(Commons.Color.foreground.r, Commons.Color.foreground.g, Commons.Color.foreground.b, 0.12)
+
+          ColumnLayout {
+            id: claudeCol
+            anchors.fill: parent
+            anchors.margins: Commons.Style.space(10)
+            spacing: Commons.Style.space(8)
+
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: Commons.Style.space(8)
+
+              Text {
+                text: "󰧑"
+                color: hudWindow.themeAccent
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.body
+              }
+
+              Text {
+                text: "Claude Code"
+                color: Commons.Color.foreground
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.bodySmall
+                font.weight: Font.DemiBold
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+              }
+
+              Text {
+                text: hudWindow.pluginService && hudWindow.pluginService.claudeData ? String(hudWindow.pluginService.claudeData.plan || "") : ""
+                color: hudWindow.themeAccent
+                font.family: Commons.Style.font.family
+                font.pixelSize: Commons.Style.font.caption
+                font.weight: Font.Bold
+              }
+            }
+
+            LimitWindow {
+              accent: hudWindow.themeAccent
+              windowData: hudWindow.pluginService && hudWindow.pluginService.claudeData ? hudWindow.pluginService.claudeData.session : null
+            }
+
+            LimitWindow {
+              accent: hudWindow.themeAccent
+              windowData: hudWindow.pluginService && hudWindow.pluginService.claudeData ? hudWindow.pluginService.claudeData.weekly : null
+            }
+          }
+        }
+      }
+
+      // SECTION 4: GOOGLE ANTIGRAVITY (PRO ACCOUNT ONLY)
       ColumnLayout {
         Layout.fillWidth: true
         spacing: Commons.Style.space(6)
