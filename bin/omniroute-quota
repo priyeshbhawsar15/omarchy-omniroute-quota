@@ -21,7 +21,7 @@ STATE_DIR = HOME / ".local/state/omarchy/omniroute-quota"
 STATE_FILE = STATE_DIR / "state.json"
 
 DEFAULT_CONFIG = {
-    "endpoint": "https://omniroute.home.priyeshbhawsar.com",
+    "endpoint": "http://localhost:20128",
     "token": "",
     "refreshIntervalSeconds": 60,
     "targetScreen": "DP-4",
